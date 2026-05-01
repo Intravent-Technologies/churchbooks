@@ -1,0 +1,10 @@
+flask
+twilio
+groq
+supabase
+apscheduler
+python-dotenv
+requests
+pytz
+openpyxl
+gunicorn

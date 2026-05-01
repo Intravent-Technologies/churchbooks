@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register — ChurchBooks AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="auth-page">
+    <nav class="navbar auth-nav">
+        <div class="nav-container">
+            <a href="/" class="logo">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="ChurchBooks AI" class="logo-img">
+            </a>
+        </div>
+    </nav>
+
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1>Register your church</h1>
+                <p>Setup takes 2 minutes. No credit card required.</p>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="/register" class="auth-form">
+                <div class="form-section">
+                    <h3>Church Information</h3>
+                    
+                    <div class="form-group">
+                        <label for="church_name">Church Name</label>
+                        <input type="text" id="church_name" name="church_name" required 
+                               placeholder="e.g., Grace Community Church">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="denomination">Denomination</label>
+                        <input type="text" id="denomination" name="denomination" 
+                               placeholder="e.g., Pentecostal, Anglican, Baptist">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="city">City</label>
+                            <input type="text" id="city" name="city" placeholder="e.g., Lagos">
+                        </div>
+                        <div class="form-group">
+                            <label for="state">State</label>
+                            <input type="text" id="state" name="state" placeholder="e.g., Lagos State">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="address">Address</label>
+                        <input type="text" id="address" name="address" placeholder="Optional">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="church_phone">Phone</label>
+                            <input type="tel" id="church_phone" name="church_phone" placeholder="08012345678">
+                        </div>
+                        <div class="form-group">
+                            <label for="church_email">Email</label>
+                            <input type="email" id="church_email" name="church_email" placeholder="info@church.org">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Pastor / Church Leader</h3>
+                    <p class="form-hint">At least one leader is required for oversight and approvals.</p>
+                    
+                    <div class="form-group">
+                        <label for="pastor_name">Full Name</label>
+                        <input type="text" id="pastor_name" name="pastor_name" required 
+                               placeholder="e.g., Pastor Adeyemi Johnson">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="pastor_phone">Phone Number</label>
+                        <input type="tel" id="pastor_phone" name="pastor_phone" required 
+                               placeholder="08012345678">
+                        <span class="form-note">This number will receive WhatsApp notifications</span>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Treasurer <span class="optional-badge">Optional</span></h3>
+                    <p class="form-hint">You can add a treasurer later from your dashboard.</p>
+                    
+                    <div class="form-group">
+                        <label for="treasurer_name">Full Name</label>
+                        <input type="text" id="treasurer_name" name="treasurer_name" 
+                               placeholder="e.g., Sister Funke Adebayo">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="treasurer_phone">Phone Number</label>
+                        <input type="tel" id="treasurer_phone" name="treasurer_phone" 
+                               placeholder="08098765432">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn primary full-width large">Create Account</button>
+
+                <p class="auth-footer">Already have an account? <a href="/login">Log in</a></p>
+            </form>
+        </div>
+    </div>
+
+    <footer class="footer-minimal">
+        <p>© 2026 ChurchBooks AI by Intravent</p>
+    </footer>
+</body>
+</html>

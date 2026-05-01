@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — ChurchBooks AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="dashboard-page">
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="logo">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="ChurchBooks AI" class="logo-img">
+            </a>
+        </div>
+        <div class="nav-links-bar">
+            <span class="user-greeting">Hi, {{ user.name }}</span>
+            <a href="/logout" class="nav-btn secondary">Log Out</a>
+        </div>
+    </nav>
+
+    <main class="dashboard-container">
+        <div class="dashboard-header">
+            <div>
+                <h1>{{ church.name }}</h1>
+                <p>Dashboard • <span class="role-badge {{ user.role }}">{{ user.role | capitalize }}</span></p>
+            </div>
+            <a href="/register" class="btn primary">Add Member</a>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">📈</div>
+                <div>
+                    <span class="stat-label">Income</span>
+                    <span class="stat-value">₦{{ "{:,}".format(stats.total_income) }}</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📉</div>
+                <div>
+                    <span class="stat-label">Expenses</span>
+                    <span class="stat-value">₦{{ "{:,}".format(stats.total_expenses) }}</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">💰</div>
+                <div>
+                    <span class="stat-label">Net Balance</span>
+                    <span class="stat-value">₦{{ "{:,}".format(stats.net_balance) }}</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📊</div>
+                <div>
+                    <span class="stat-label">Transactions</span>
+                    <span class="stat-value">{{ stats.total_transactions }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- WhatsApp Instructions -->
+        <div class="dashboard-card whatsapp-card">
+            <h2>📱 Connect via WhatsApp</h2>
+            <p>Send voice notes to record transactions, ask for reports, or get financial insights.</p>
+            <div class="whatsapp-number">
+                <span class="number-label">WhatsApp:</span>
+                <span class="number-value">+234 XXX XXX XXXX</span>
+                <span class="copy-btn" onclick="copyNumber()">Copy</span>
+            </div>
+            <div class="whatsapp-examples">
+                <p><strong>Try saying:</strong></p>
+                <ul>
+                    <li>"Sunday offering was 200k"</li>
+                    <li>"Show me this week's expenses"</li>
+                    <li>"What's our balance this month?"</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Team Members -->
+        <div class="dashboard-card">
+            <h2>👥 Team Members</h2>
+            <div class="team-list">
+                <div class="team-member">
+                    <div class="member-avatar">👤</div>
+                    <div class="member-info">
+                        <strong>{{ user.name }}</strong>
+                        <span>{{ user.role | capitalize }}</span>
+                    </div>
+                    <span class="member-status active">Active</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer-minimal">
+        <p>© 2026 ChurchBooks AI by Intravent</p>
+    </footer>
+
+    <script>
+        function copyNumber() {
+            navigator.clipboard.writeText('+234 XXX XXX XXXX');
+            alert('Copied!');
+        }
+    </script>
+</body>
+</html>

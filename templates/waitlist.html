@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChurchBooks AI — Early Access Waitlist</title>
+    <meta name="description" content="Church finances, managed by voice. Send a WhatsApp voice note. Get a clean financial report. Join the early access waitlist.">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --page-bg: #F1F5F9;
+            --card-bg: #FFFFFF;
+        }
+
+        .waitlist-page {
+            background: var(--page-bg);
+            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Nav */
+        .waitlist-nav {
+            background: transparent;
+            border: none;
+            position: static;
+        }
+
+        .waitlist-nav .nav-container {
+            padding: 32px 24px 0;
+            justify-content: center;
+        }
+
+        .waitlist-nav .logo-img {
+            height: 250px;
+        }
+
+        /* Hero */
+        .waitlist-hero {
+            padding: 0 0 60px;
+            position: relative;
+        }
+
+        .waitlist-container {
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .waitlist-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .waitlist-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(79, 70, 229, 0.08);
+            border: 1px solid rgba(79, 70, 229, 0.15);
+            color: var(--primary);
+            padding: 8px 18px;
+            border-radius: var(--radius-full);
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            letter-spacing: 0.02em;
+        }
+
+        .waitlist-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--primary);
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+
+        .waitlist-title {
+            font-size: 44px;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 16px;
+            letter-spacing: -0.04em;
+            color: var(--text);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, var(--primary) 0%, #7C3AED 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .waitlist-subtitle {
+            font-size: 18px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        /* How it works chips */
+        .how-chips {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 28px;
+            flex-wrap: wrap;
+        }
+
+        .how-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 10px 18px;
+            border-radius: var(--radius);
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .how-chip span {
+            font-size: 16px;
+        }
+
+        /* Social proof */
+        .social-proof {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            margin-top: 32px;
+            flex-wrap: wrap;
+        }
+
+        .proof-item {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+        }
+
+        .proof-num {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--text);
+        }
+
+        .proof-label {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .proof-sep {
+            width: 1px;
+            height: 20px;
+            background: var(--border);
+        }
+
+        /* Form Card */
+        .form-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .form-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary) 0%, #7C3AED 100%);
+        }
+
+        .form-header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .form-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 4px;
+            letter-spacing: -0.02em;
+        }
+
+        .form-subtitle {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        /* Step indicator */
+        .step-indicator {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 32px;
+        }
+
+        .step-dot {
+            flex: 1;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .step-dot.active {
+            background: var(--primary);
+        }
+
+        .step-dot.done {
+            background: var(--success);
+        }
+
+        /* Steps */
+        .step {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Form fields */
+        .field {
+            margin-bottom: 24px;
+        }
+
+        .field-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--text);
+        }
+
+        .req {
+            color: var(--error);
+            margin-left: 2px;
+        }
+
+        .field input[type="text"],
+        .field input[type="tel"] {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 15px;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s ease;
+            background: var(--page-bg);
+            color: var(--text);
+        }
+
+        .field input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px var(--primary-glow);
+            background: var(--card-bg);
+        }
+
+        .field input::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* Options grid */
+        .options-grid {
+            display: grid;
+            gap: 10px;
+        }
+
+        .options-grid.single {
+            grid-template-columns: 1fr;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: var(--page-bg);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius);
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .option-item:hover {
+            border-color: var(--primary-light);
+            background: var(--card-bg);
+        }
+
+        .option-item:has(input:checked) {
+            border-color: var(--primary);
+            background: rgba(79, 70, 229, 0.04);
+            box-shadow: 0 0 0 2px var(--primary-glow);
+        }
+
+        .option-item input {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .option-label {
+            font-size: 14px;
+            color: var(--text);
+            cursor: pointer;
+            flex: 1;
+            font-weight: 500;
+        }
+
+        /* Price slider */
+        .price-display {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--text);
+            text-align: center;
+            margin-bottom: 8px;
+            letter-spacing: -0.03em;
+        }
+
+        .price-display span {
+            font-size: 15px;
+            font-weight: 400;
+            color: var(--text-muted);
+        }
+
+        .field input[type="range"] {
+            width: 100%;
+            accent-color: var(--primary);
+            margin-top: 8px;
+            cursor: pointer;
+        }
+
+        .price-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 8px;
+            font-weight: 500;
+        }
+
+        /* Textarea */
+        .field textarea {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 15px;
+            font-family: 'Inter', sans-serif;
+            resize: vertical;
+            min-height: 90px;
+            transition: all 0.2s ease;
+            background: var(--page-bg);
+        }
+
+        .field textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px var(--primary-glow);
+            background: var(--card-bg);
+        }
+
+        .field textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* Buttons */
+        .btn-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 32px;
+        }
+
+        .btn-next {
+            flex: 1;
+        }
+
+        .btn-back {
+            background: var(--page-bg);
+            color: var(--text-secondary);
+            border: 1.5px solid var(--border);
+            padding: 14px 20px;
+            border-radius: var(--radius);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s ease;
+        }
+
+        .btn-back:hover {
+            background: var(--border);
+        }
+
+        .error-text {
+            color: var(--error);
+            font-size: 13px;
+            margin-top: 12px;
+            font-weight: 500;
+        }
+
+        /* Success screen */
+        .success-screen {
+            text-align: center;
+            padding: 48px 24px;
+        }
+
+        .success-icon {
+            width: 72px;
+            height: 72px;
+            background: var(--success-bg);
+            border: 2px solid rgba(16, 185, 129, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin: 0 auto 24px;
+        }
+
+        .success-screen h2 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+
+        .success-screen p {
+            color: var(--text-secondary);
+            font-size: 15px;
+            margin-bottom: 28px;
+            line-height: 1.6;
+        }
+
+        .share-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #25D366;
+            color: white;
+            padding: 14px 28px;
+            border-radius: var(--radius);
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .share-btn:hover {
+            background: #128C7E;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Waitlist note */
+        .waitlist-note {
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        /* Footer */
+        .waitlist-footer {
+            text-align: center;
+            padding: 32px 24px 40px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .waitlist-hero {
+                padding: 0 0 40px;
+            }
+
+            .waitlist-title {
+                font-size: 32px;
+            }
+
+            .waitlist-subtitle {
+                font-size: 16px;
+            }
+
+            .form-card {
+                padding: 28px 24px;
+                border-radius: 20px;
+            }
+
+            .how-chips {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .social-proof {
+                gap: 12px;
+            }
+
+            .proof-sep {
+                display: none;
+            }
+
+            .btn-row {
+                flex-direction: column;
+            }
+
+            .btn-back {
+                order: 2;
+            }
+        }
+    </style>
+</head>
+<body class="waitlist-page">
+    <nav class="navbar waitlist-nav">
+        <div class="nav-container">
+            <a href="/waitlist" class="logo">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="ChurchBooks AI" class="logo-img">
+            </a>
+        </div>
+    </nav>
+
+    <section class="waitlist-hero">
+        <div class="waitlist-container">
+            <div class="waitlist-header">
+                <div class="waitlist-badge">
+                    <div class="waitlist-dot"></div>
+                    Early Access — Limited Spots
+                </div>
+
+                <h1 class="waitlist-title">
+                    Church finances,<br>managed by <span class="gradient-text">voice.</span>
+                </h1>
+                <p class="waitlist-subtitle">
+                    Send a WhatsApp voice note. Get a clean financial report. No spreadsheets. No stress.
+                </p>
+
+                <div class="how-chips">
+                    <div class="how-chip"><span>🎙️</span> Send voice note</div>
+                    <div class="how-chip"><span>⚡</span> AI records it</div>
+                    <div class="how-chip"><span>📊</span> Pastor gets report</div>
+                </div>
+
+                <div class="social-proof">
+                    <div class="proof-item">
+                        <span class="proof-num" id="waitlistCount">{{ waitlist_count }}</span>
+                        <span class="proof-label">On Waitlist</span>
+                    </div>
+                    <div class="proof-sep"></div>
+                    <div class="proof-item">
+                        <span class="proof-num">4 wks</span>
+                        <span class="proof-label">Pilot Access</span>
+                    </div>
+                    <div class="proof-sep"></div>
+                    <div class="proof-item">
+                        <span class="proof-num">Free</span>
+                        <span class="proof-label">Early Access</span>
+                    </div>
+                </div>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}" style="margin-bottom: 20px;">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="form-card">
+                <div class="form-header">
+                    <div class="form-title">Join the waitlist</div>
+                    <div class="form-subtitle">Takes less than 60 seconds</div>
+                </div>
+
+                <div class="step-indicator">
+                    <div class="step-dot active" id="dot0"></div>
+                    <div class="step-dot" id="dot1"></div>
+                    <div class="step-dot" id="dot2"></div>
+                    <div class="step-dot" id="dot3"></div>
+                </div>
+
+                <form method="POST" action="/waitlist" id="waitlistForm">
+                    <!-- STEP 0: Contact Info -->
+                    <div class="step active" id="step0">
+                        <div class="field">
+                            <label class="field-label" for="name">Your name <span class="req">*</span></label>
+                            <input type="text" id="name" name="name" placeholder="e.g. Pastor Adewale or Sister Grace" required>
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="phone">WhatsApp number <span class="req">*</span></label>
+                            <input type="tel" id="phone" name="phone" placeholder="+234 800 000 0000" required>
+                        </div>
+                        <div class="field">
+                            <label class="field-label">Your role in the church <span class="req">*</span></label>
+                            <div class="options-grid single">
+                                <label class="option-item">
+                                    <input type="radio" name="role" value="Pastor/Church Leader" required>
+                                    <span class="option-label">Pastor / Church Leader</span>
+                                </label>
+                                <label class="option-item">
+                                    <input type="radio" name="role" value="Church Treasurer">
+                                    <span class="option-label">Church Treasurer</span>
+                                </label>
+                                <label class="option-item">
+                                    <input type="radio" name="role" value="Church Admin / Secretary">
+                                    <span class="option-label">Church Admin / Secretary</span>
+                                </label>
+                                <label class="option-item">
+                                    <input type="radio" name="role" value="Business Owner">
+                                    <span class="option-label">Business Owner</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="btn-row">
+                            <button type="button" class="btn btn-next btn primary large" onclick="nextStep()">Continue →</button>
+                        </div>
+                        <div class="error-text" id="error0"></div>
+                    </div>
+
+                    <!-- STEP 1: Current Tracking -->
+                    <div class="step" id="step1">
+                        <div class="field">
+                            <label class="field-label">How do you currently track church finances? <span class="req">*</span></label>
+                            <div class="options-grid single">
+                                <label class="option-item">
+                                    <input type="radio" name="current_tracking" value="Notebook / paper records" required>
+                                    <span class="option-label">Notebook / paper records</span>
+                                </label>
+                                <label class="option-item">
+                                    <input type="radio" name="current_tracking" value="Excel or Google Sheets">
+                                    <span class="option-label">Excel or Google Sheets</span>
+                                </label>
+                                <label class="option-item">
+                                    <input type="radio" name="current_tracking" value="No proper system right now">
+                                    <span class="option-label">No proper system right now</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="btn-row">
+                            <button type="button" class="btn btn-back" onclick="prevStep()">←</button>
+                            <button type="button" class="btn btn-next btn primary large" onclick="nextStep()">Continue →</button>
+                        </div>
+                        <div class="error-text" id="error1"></div>
+                    </div>
+
+                    <!-- STEP 2: Willingness to Pay -->
+                    <div class="step" id="step2">
+                        <div class="field">
+                            <label class="field-label">Would you pay for a tool that automates this completely? <span class="req">*</span></label>
+                            <div class="options-grid single">
+                                <label class="option-item">
+                                    <input type="radio" name="will_pay" value="Yes, definitely" required>
+                                    <span class="option-label">Yes, definitely</span>
+                                </label>
+                                <label class="option-item">
+                                    <input type="radio" name="will_pay" value="Yes, if the price is right">
+                                    <span class="option-label">Yes, if the price is right</span>
+                                </label>
+                                <label class="option-item">
+                                    <input type="radio" name="will_pay" value="Probably not">
+                                    <span class="option-label">Probably not</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="field-label">What would you consider fair pricing?</label>
+                            <div class="price-display" id="priceDisplay">Free</div>
+                            <input type="range" id="priceRange" name="price_range" min="0" max="3" value="0" oninput="updatePrice()">
+                            <div class="price-labels">
+                                <span>Free</span>
+                                <span>₦5,000</span>
+                                <span>₦10,000</span>
+                                <span>₦10,000+</span>
+                            </div>
+                        </div>
+                        <div class="btn-row">
+                            <button type="button" class="btn btn-back" onclick="prevStep()">←</button>
+                            <button type="button" class="btn btn-next btn primary large" onclick="nextStep()">Continue →</button>
+                        </div>
+                        <div class="error-text" id="error2"></div>
+                    </div>
+
+                    <!-- STEP 3: Features -->
+                    <div class="step" id="step3">
+                        <div class="field">
+                            <label class="field-label">Which features would you use most? <span class="req">*</span> <em style="font-weight: 400; color: var(--text-muted);">(pick all that apply)</em></label>
+                            <div class="options-grid">
+                                <label class="option-item">
+                                    <input type="checkbox" name="features" value="Weekly/monthly reports to pastor on WhatsApp">
+                                    <span class="option-label">Weekly/monthly reports to pastor on WhatsApp</span>
+                                </label>
+                                <label class="option-item">
+                                    <input type="checkbox" name="features" value="Voice notes in Yoruba or Pidgin English">
+                                    <span class="option-label">Voice notes in Yoruba or Pidgin English</span>
+                                </label>
+                                <label class="option-item">
+                                    <input type="checkbox" name="features" value="Budget tracking & alerts">
+                                    <span class="option-label">Budget tracking & alerts</span>
+                                </label>
+                                <label class="option-item">
+                                    <input type="checkbox" name="features" value="Downloadable PDF reports">
+                                    <span class="option-label">Downloadable PDF reports</span>
+                                </label>
+                                <label class="option-item">
+                                    <input type="checkbox" name="features" value="Multiple treasurers logging at once">
+                                    <span class="option-label">Multiple treasurers logging at once</span>
+                                </label>
+                                <label class="option-item">
+                                    <input type="checkbox" name="features" value="Annual audit-ready report">
+                                    <span class="option-label">Annual audit-ready report</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="field-label">Anything else you'd want this tool to do?</label>
+                            <textarea name="other_feature" placeholder="e.g. Auto-sms offering reminders, tithing tracker..."></textarea>
+                        </div>
+                        <div class="btn-row">
+                            <button type="button" class="btn btn-back" onclick="prevStep()">←</button>
+                            <button type="submit" class="btn btn-next btn primary large">Submit →</button>
+                        </div>
+                        <div class="error-text" id="error3"></div>
+                    </div>
+                </form>
+            </div>
+
+            <p class="waitlist-note">🔒 Your info is safe. We'll only contact you when it's your turn.</p>
+        </div>
+    </section>
+
+    <footer class="waitlist-footer">
+        Built by <strong>Intravent</strong> · Nigeria
+    </footer>
+
+    <script>
+        let currentStep = 0;
+        const totalSteps = 4;
+
+        function updateStepIndicator() {
+            for (let i = 0; i < totalSteps; i++) {
+                const dot = document.getElementById('dot' + i);
+                dot.className = 'step-dot';
+                if (i < currentStep) dot.classList.add('done');
+                if (i === currentStep) dot.classList.add('active');
+            }
+        }
+
+        function showStep(n) {
+            document.querySelectorAll('.step').forEach((s, i) => {
+                s.classList.toggle('active', i === n);
+            });
+            currentStep = n;
+            updateStepIndicator();
+        }
+
+        function nextStep() {
+            clearErrors();
+            if (!validateStep(currentStep)) return;
+            if (currentStep < totalSteps - 1) showStep(currentStep + 1);
+        }
+
+        function prevStep() {
+            clearErrors();
+            if (currentStep > 0) showStep(currentStep - 1);
+        }
+
+        function validateStep(step) {
+            if (step === 0) {
+                const name = document.getElementById('name').value.trim();
+                const phone = document.getElementById('phone').value.trim();
+                const role = document.querySelector('input[name="role"]:checked');
+                if (!name || !phone) {
+                    showError(0, 'Please fill in your name and phone number.');
+                    return false;
+                }
+                if (!role) {
+                    showError(0, 'Please select your role in the church.');
+                    return false;
+                }
+            }
+            if (step === 1) {
+                const current = document.querySelector('input[name="current_tracking"]:checked');
+                if (!current) {
+                    showError(1, 'Please select how you currently track finances.');
+                    return false;
+                }
+            }
+            if (step === 2) {
+                const pay = document.querySelector('input[name="will_pay"]:checked');
+                if (!pay) {
+                    showError(2, 'Please select your willingness to pay.');
+                    return false;
+                }
+            }
+            if (step === 3) {
+                const features = document.querySelectorAll('input[name="features"]:checked');
+                if (features.length === 0) {
+                    showError(3, 'Please select at least one feature.');
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function showError(step, msg) {
+            document.getElementById('error' + step).textContent = msg;
+        }
+
+        function clearErrors() {
+            document.querySelectorAll('.error-text').forEach(e => e.textContent = '');
+        }
+
+        function updatePrice() {
+            const prices = ['Free', '₦5,000', '₦10,000', '₦10,000+'];
+            document.getElementById('priceDisplay').textContent = prices[document.getElementById('priceRange').value];
+        }
+
+        // Real-time count sync
+        let lastCount = {{ waitlist_count }};
+        setInterval(async () => {
+            try {
+                const res = await fetch('/api/waitlist/count');
+                const data = await res.json();
+                if (data.count !== lastCount) {
+                    const el = document.getElementById('waitlistCount');
+                    el.textContent = data.count;
+                    el.style.transform = 'scale(1.2)';
+                    el.style.transition = 'transform 0.3s ease';
+                    setTimeout(() => { el.style.transform = 'scale(1)'; }, 300);
+                    lastCount = data.count;
+                }
+            } catch (e) {}
+        }, 5000);
+    </script>
+</body>
+</html>

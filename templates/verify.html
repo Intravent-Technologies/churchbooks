@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify — ChurchBooks AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="auth-page">
+    <nav class="navbar auth-nav">
+        <div class="nav-container">
+            <a href="/" class="logo">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="ChurchBooks AI" class="logo-img">
+                
+                
+            </a>
+        </div>
+    </nav>
+
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1>Verify your account</h1>
+                <p>Enter the 6-digit code sent to the pastor's phone</p>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="verification-box">
+                <p class="verification-phone">📱 Code sent to <strong>{{ pastor_phone }}</strong></p>
+                <div class="verification-code-display">
+                    <span class="code-label">Your verification code</span>
+                    <span class="code-value">{{ pastor_code }}</span>
+                </div>
+                <p class="verification-note">In production, this will be sent via SMS/WhatsApp automatically.</p>
+            </div>
+
+            <form method="POST" action="/verify" class="auth-form">
+                <div class="form-group">
+                    <label for="phone">Phone Number</label>
+                    <input type="tel" id="phone" name="phone" required 
+                           value="{{ pastor_phone }}" placeholder="08012345678">
+                </div>
+
+                <div class="form-group">
+                    <label for="code">6-Digit Code</label>
+                    <input type="text" id="code" name="code" required 
+                           maxlength="6" pattern="[0-9]{6}" inputmode="numeric"
+                           placeholder="123456">
+                </div>
+
+                <button type="submit" class="btn primary full-width large">Verify Account</button>
+            </form>
+
+            <p class="auth-footer">
+                Didn't receive a code? <a href="/register">Start over</a>
+            </p>
+        </div>
+    </div>
+
+    <footer class="footer-minimal">
+        <p>© 2026 ChurchBooks AI by Intravent</p>
+    </footer>
+</body>
+</html>

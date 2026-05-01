@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Set PIN — ChurchBooks AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="auth-page">
+    <nav class="navbar auth-nav">
+        <div class="nav-container">
+            <a href="/" class="logo">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="ChurchBooks AI" class="logo-img">
+                
+                
+            </a>
+        </div>
+    </nav>
+
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1>Set your PIN</h1>
+                <p>Welcome, {{ user.name }}! Choose a 4-digit PIN to secure your account.</p>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="/set-pin" class="auth-form">
+                <div class="form-group">
+                    <label for="pin">4-Digit PIN</label>
+                    <input type="password" id="pin" name="pin" required 
+                           maxlength="4" pattern="[0-9]{4}" inputmode="numeric"
+                           placeholder="Enter PIN">
+                </div>
+
+                <div class="form-group">
+                    <label for="confirm_pin">Confirm PIN</label>
+                    <input type="password" id="confirm_pin" name="confirm_pin" required 
+                           maxlength="4" pattern="[0-9]{4}" inputmode="numeric"
+                           placeholder="Confirm PIN">
+                </div>
+
+                <div class="pin-tips">
+                    <h4>💡 Tips</h4>
+                    <ul>
+                        <li>Choose something easy to remember but hard to guess</li>
+                        <li>Avoid 1234, 0000, or your birth year</li>
+                        <li>You can change it later in settings</li>
+                    </ul>
+                </div>
+
+                <button type="submit" class="btn primary full-width large">Set PIN & Finish</button>
+            </form>
+        </div>
+    </div>
+
+    <footer class="footer-minimal">
+        <p>© 2026 ChurchBooks AI by Intravent</p>
+    </footer>
+</body>
+</html>

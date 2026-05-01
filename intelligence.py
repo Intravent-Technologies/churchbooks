@@ -1,0 +1,116 @@
+import os
+import json
+import logging
+from groq import Groq
+from database import (
+    save_pending, get_pending, delete_pending, save_transactions,
+    update_pending, get_transactions, get_transaction_by_id, update_transaction,
+    delete_transaction, search_transactions, get_balance_summary
+)
+
+logging.basicConfig(level=logging.INFO)
+
+SYSTEM_PROMPT = """You are ChurchBooks AI, an elite financial intelligence system for Nigerian churches. You possess expert-level accounting knowledge, deep cultural fluency in Nigerian English, Pidgin, and Yoruba, and advanced contextual reasoning.
+
+YOUR CORE DIRECTIVES:
+1. **Name Extraction**: Always look for the user's name in the message.
+   - If they say "My name is John" or "It's Sarah here", extract it.
+   - If they introduce themselves ("I'm the new treasurer"), extract the name.
+   - Return this in the `extracted_name` field. If no name is mentioned, return null.
+2. **Strict Literalism**: NEVER categorize a transaction unless the specific word is used or the intent is 100% clear.
+   - If user says "withdrew", "took out", "cashed" → Category is "Withdrawal" (type: "transfer"). Do NOT call it "Offering" or "Expense".
+   - If user says "paid", "spent", "gave", "bought" → Category is the item/person paid (e.g., "Fuel", "Pastor").
+   - If user says "received", "collected", "got" → Category is the source (e.g., "Offering", "Donor").
+3. **People & Context Extraction**: You must extract WHO is involved in the transaction.
+   - Look for names (Papa, Mama, Miss Engage, Brother John, Pastor Tunde) and roles (Pastor, Treasurer, Usher).
+   - Look for actions: "approved", "counted", "submitted", "delivered", "witnessed".
+   - Store this in the `context` field as a string: "Approved by Papa | Counted by Miss Engage".
+4. **Contextual Reasoning**:
+   - "We withdrew 50k for fuel" → Entry 1: Withdrawal (50k). Entry 2: Fuel (50k).
+   - "Miss Engage counted offering of 200k" → Category: Offering, Amount: 200k, Context: "Counted by Miss Engage".
+5. **Ambiguity Handling**: If a transaction is vague, set `confidence` to "low" and ask for clarification.
+6. **Strict JSON Output**: Return ONLY valid JSON matching the exact schema. No markdown. No extra text.
+
+RETURN SCHEMA:
+{
+  "intent": "record_income" | "record_expense" | "query_balance" | "get_transactions" | "get_records_by_person" | "edit_pending" | "delete_transaction" | "generate_report" | "general_chat" | "clarification_needed",
+  "extracted_name": "string or null",
+  "entities": {"amount": number|null, "category": "string|null", "date_range": "today|week|month|null", "person_name": "string|null"},
+  "entries_for_recording": [{"type": "income|expense|transfer", "category": "string", "amount": number, "note": "string", "context": "string"}],
+  "updated_pending_entries": [{"type": "income|expense|transfer", "category": "string", "amount": number, "note": "string", "context": "string"}],
+  "response_text": "Clear, concise WhatsApp-friendly response",
+  "confidence": "high|low"
+}
+
+CRITICAL RULES:
+- For `edit_pending`: Return the COMPLETE updated list in `updated_pending_entries`.
+- For `delete_transaction`: If user says "Delete the fuel record from today", intent is `delete_transaction` and `entities.category` should be "fuel".
+- If user asks "Who counted offering?" or "Show me records by Papa", intent is `get_records_by_person`.
+- NEVER assume "offering" if the user just says "money". Use the user's exact words for categories whenever possible.
+- If confidence is low, set `intent` to `clarification_needed` and ask a specific question."""
+
+def extract_name_and_role(message):
+    """Extract name and role from a conversational message using Groq."""
+    try:
+        client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": """Extract the person's name and/or role from the message.
+Return ONLY JSON: {"name": "extracted name or null", "role": "extracted role or null"}
+Examples:
+- "My name is John" → {"name": "John", "role": null}
+- "I'm the new treasurer" → {"name": null, "role": "Treasurer"}
+- "I'm Sarah, the admin" → {"name": "Sarah", "role": "Admin"}
+- "Pastor Tunde here" → {"name": "Tunde", "role": "Pastor"}"""},
+                {"role": "user", "content": message}
+            ],
+            response_format={"type": "json_object"},
+            temperature=0.2,
+            max_tokens=128
+        )
+        import json
+        raw = completion.choices[0].message.content.strip()
+        if raw.startswith("```json"):
+            raw = raw.replace("```json", "").replace("```", "").strip()
+        return json.loads(raw)
+    except Exception as e:
+        logging.error(f"Name/Role extraction error: {e}")
+        return {"name": None, "role": None}
+
+def analyze_message(transcript_or_text, sender_phone):
+    try:
+        client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+        
+        # Fetch pending draft for context
+        pending = get_pending(sender_phone)
+        context = ""
+        if pending and pending.get("entries"):
+            context = f"\n[Current Pending Draft]: {json.dumps(pending['entries'])}"
+            
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": transcript_or_text + context}
+            ],
+            response_format={"type": "json_object"},
+            temperature=0.2,
+            max_tokens=1024
+        )
+        
+        raw_response = completion.choices[0].message.content.strip()
+        if raw_response.startswith("```json"):
+            raw_response = raw_response.replace("```json", "").replace("```", "").strip()
+            
+        return json.loads(raw_response)
+    except Exception as e:
+        logging.error(f"Intelligence error: {e}")
+        return {
+            "intent": "general_chat",
+            "entities": {},
+            "entries_for_recording": [],
+            "updated_pending_entries": [],
+            "response_text": "I didn't quite catch that. Could you please repeat it clearly?",
+            "confidence": "low"
+        }

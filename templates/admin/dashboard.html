@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard — ChurchBooks AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .admin-body {
+            background: var(--bg-subtle);
+            min-height: 100vh;
+        }
+        .admin-nav {
+            background: var(--bg-elevated);
+            border-bottom: 1px solid var(--border-light);
+            padding: 0 24px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .admin-nav-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 56px;
+        }
+        .admin-nav .logo {
+            font-size: 16px;
+            justify-content: flex-start;
+        }
+        .admin-nav .logo-img {
+            height: 150px;
+            width: auto;
+        }
+        .admin-nav .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .admin-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+        .admin-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 28px;
+        }
+        .admin-header h1 {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .admin-actions {
+            display: flex;
+            gap: 12px;
+        }
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+        .stat-box {
+            background: var(--bg-elevated);
+            padding: 20px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border-light);
+        }
+        .stat-box .stat-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .stat-box .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+        }
+        .stat-box .stat-detail {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+        .table-card {
+            background: var(--bg-elevated);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-light);
+            overflow: hidden;
+        }
+        .table-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .table-header h2 {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .search-box {
+            padding: 8px 14px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 13px;
+            font-family: 'Inter', sans-serif;
+            width: 240px;
+        }
+        .search-box:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+        .table-wrapper {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        th {
+            text-align: left;
+            padding: 12px 16px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border-light);
+            background: var(--bg-subtle);
+            white-space: nowrap;
+        }
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border-light);
+            vertical-align: middle;
+        }
+        tr:hover td {
+            background: var(--bg-subtle);
+        }
+        .td-name {
+            font-weight: 600;
+            color: var(--text);
+        }
+        .td-phone {
+            font-family: 'Inter', monospace;
+            color: var(--text-secondary);
+        }
+        .role-badge-sm {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: var(--radius-full);
+            font-size: 11px;
+            font-weight: 600;
+            background: var(--primary-glow);
+            color: var(--primary);
+        }
+        .role-badge-sm.treasurer {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--accent-hover);
+        }
+        .role-badge-sm.admin {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+        .td-date {
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+        .empty-state span {
+            font-size: 40px;
+            display: block;
+            margin-bottom: 12px;
+        }
+        .filters-bar {
+            display: flex;
+            gap: 8px;
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border-light);
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            padding: 6px 14px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-full);
+            font-size: 12px;
+            font-weight: 500;
+            background: var(--bg-elevated);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: 'Inter', sans-serif;
+        }
+        .filter-btn:hover, .filter-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        @media (max-width: 768px) {
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .admin-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+            .search-box {
+                width: 100%;
+            }
+            .table-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+        }
+    </style>
+</head>
+<body class="admin-body">
+    <nav class="admin-nav">
+        <div class="admin-nav-inner">
+            <a href="/admin/dashboard" class="logo">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="ChurchBooks AI" class="logo-img">
+                
+                
+            </a>
+            <div class="nav-right">
+                <span id="notificationBell" style="display:none; position:relative; cursor:pointer; font-size:18px;" title="New submission!">
+                    🔔<span id="notifBadge" style="position:absolute;top:-4px;right:-6px;background:var(--error);color:white;font-size:10px;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;">0</span>
+                </span>
+                <a href="/waitlist" target="_blank" style="font-size: 13px; color: var(--text-secondary);">View Waitlist →</a>
+                <a href="/admin/logout" style="font-size: 13px; color: var(--error);">Log Out</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="admin-container">
+        <div class="admin-header">
+            <div>
+                <h1>Waitlist Dashboard</h1>
+                <p style="color: var(--text-muted); font-size: 14px;">Track and manage early access respondents</p>
+            </div>
+            <div class="admin-actions">
+                <a href="/admin/export" class="btn primary">📥 Export CSV</a>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-row">
+            <div class="stat-box">
+                <span class="stat-label">Total Respondents</span>
+                <span class="stat-value">{{ total }}</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">Top Role</span>
+                <span class="stat-value" style="font-size: 20px;">
+                    {% if roles %}
+                        {% set sorted = roles | dictsort(by='value', reverse=True) %}
+                        {{ sorted[0][0] }}
+                    {% else %}—{% endif %}
+                </span>
+                {% if roles %}
+                <span class="stat-detail">{{ sorted[0][1] }} respondents</span>
+                {% endif %}
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">Willing to Pay</span>
+                <span class="stat-value" style="font-size: 20px;">
+                    {% set yes_count = namespace(val=0) %}
+                    {% for k, v in will_pay_breakdown.items() %}
+                        {% if 'yes' in k.lower() %}{% set yes_count.val = yes_count.val + v %}{% endif %}
+                    {% endfor %}
+                    {{ yes_count.val }}
+                </span>
+                {% if will_pay_breakdown %}
+                <span class="stat-detail">{{ ((yes_count.val / total) * 100) | int }}% of total</span>
+                {% endif %}
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">No System Currently</span>
+                <span class="stat-value" style="font-size: 20px;">
+                    {{ current_methods.get('No proper system right now', 0) }}
+                </span>
+                {% if total > 0 %}
+                <span class="stat-detail">{{ ((current_methods.get('No proper system right now', 0) / total) * 100) | int }}% of total</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-card">
+            <div class="table-header">
+                <h2>All Respondents</h2>
+                <input type="text" class="search-box" id="searchInput" placeholder="Search name, phone, role..." oninput="filterTable()">
+            </div>
+            <div class="filters-bar">
+                <button class="filter-btn active" onclick="filterByRole(this, 'all')">All ({{ total }})</button>
+                {% for role, count in roles.items() %}
+                    <button class="filter-btn" onclick="filterByRole(this, '{{ role }}')">{{ role }} ({{ count }})</button>
+                {% endfor %}
+            </div>
+            <div class="table-wrapper">
+                {% if entries %}
+                <table id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Name</th>
+                            <th>Phone</th>
+                            <th>Role</th>
+                            <th>Current Method</th>
+                            <th>Will Pay?</th>
+                            <th>Price Range</th>
+                            <th>Features</th>
+                            <th>Other</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        {% for e in entries %}
+                        <tr data-role="{{ e.role }}">
+                            <td style="color: var(--text-muted); font-weight: 500;">{{ loop.index }}</td>
+                            <td class="td-name">{{ e.name }}</td>
+                            <td class="td-phone">{{ e.phone }}</td>
+                            <td><span class="role-badge-sm {% if 'treasurer' in e.role|lower %}treasurer{% elif 'admin' in e.role|lower %}admin{% endif %}">{{ e.role }}</span></td>
+                            <td>{{ e.current_tracking or '—' }}</td>
+                            <td>{{ e.will_pay or '—' }}</td>
+                            <td>{{ e.price_range or '—' }}</td>
+                            <td style="max-width: 200px; font-size: 12px; color: var(--text-secondary);">{{ e.features or '—' }}</td>
+                            <td style="max-width: 150px; font-size: 12px; color: var(--text-secondary);">{{ e.other_feature or '—' }}</td>
+                            <td class="td-date">{{ e.created_at[:10] if e.created_at else '—' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-state">
+                    <span>📋</span>
+                    <p>No respondents yet.<br>Share the waitlist link to start collecting responses.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function filterTable() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('#tableBody tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(query) ? '' : 'none';
+            });
+        }
+
+        let currentRole = 'all';
+
+        function filterByRole(btn, role) {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentRole = role;
+
+            const rows = document.querySelectorAll('#tableBody tr');
+            rows.forEach(row => {
+                if (role === 'all' || row.dataset.role === role) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        let currentRole = 'all';
+
+        function filterByRole(btn, role) {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentRole = role;
+
+            const rows = document.querySelectorAll('#tableBody tr');
+            rows.forEach(row => {
+                if (role === 'all' || row.dataset.role === role) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        // Real-time sync: poll for new entries every 10 seconds
+        let entryCount = {{ total }};
+
+        async function checkForNewEntries() {
+            try {
+                const res = await fetch(`/api/admin/refresh?last_count=${entryCount}`);
+                const data = await res.json();
+                if (data.new_count > 0) {
+                    // Update bell
+                    const bell = document.getElementById('notificationBell');
+                    const badge = document.getElementById('notifBadge');
+                    bell.style.display = 'inline-block';
+                    badge.textContent = data.new_count;
+
+                    // Flash bell animation
+                    bell.style.transform = 'scale(1.3)';
+                    setTimeout(() => { bell.style.transform = 'scale(1)'; }, 300);
+
+                    // Update stats
+                    document.querySelector('.stat-box .stat-value').textContent = data.total;
+
+                    // Play notification sound (optional, subtle)
+                    try {
+                        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.frequency.value = 800;
+                        gain.gain.value = 0.1;
+                        osc.start();
+                        osc.stop(ctx.currentTime + 0.15);
+                    } catch (e) {}
+
+                    entryCount = data.total;
+                }
+            } catch (e) {}
+        }
+
+        setInterval(checkForNewEntries, 10000);
+
+        // Auto-refresh full page every 60 seconds
+        setTimeout(() => { location.reload(); }, 60000);
+    </script>
+</body>
+</html>

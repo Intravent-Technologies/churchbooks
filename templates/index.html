@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChurchBooks AI — Smarter Financial Management for Churches</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="logo">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="ChurchBooks AI" class="logo-img">
+            </a>
+        </div>
+        <div class="nav-links-bar">
+            <a href="#features">Features</a>
+            <a href="#how-it-works">How It Works</a>
+            <a href="#pricing">Pricing</a>
+            <a href="/waitlist" class="nav-btn primary">Join Waitlist</a>
+            <a href="/login" class="nav-btn secondary">Log In</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-container">
+            <div class="hero-badge">
+                <span class="hero-badge-dot">✓</span>
+                Trusted by 200+ Nigerian Churches
+            </div>
+            <h1 class="hero-title">
+                Church finances,<br>
+                <span class="gradient-text">finally simple.</span>
+            </h1>
+            <p class="hero-subtitle">
+                Send a voice note on WhatsApp. ChurchBooks AI records, organizes, and gives you financial insights — no spreadsheets, no stress.
+            </p>
+            <div class="hero-cta">
+                <a href="/register" class="btn primary large">Start Free →</a>
+                <a href="#how-it-works" class="btn ghost large">See How It Works</a>
+            </div>
+            <div class="hero-stats">
+                <div class="stat">
+                    <span class="stat-number">₦2.4B+</span>
+                    <span class="stat-label">Transactions Recorded</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">98%</span>
+                    <span class="stat-label">Accuracy Rate</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">4.9★</span>
+                    <span class="stat-label">User Rating</span>
+                </div>
+            </div>
+        </div>
+        <div class="hero-visual">
+            <div class="phone-mockup">
+                <div class="chat-header">
+                    <div class="chat-avatar">CB</div>
+                    <div>
+                        <div class="chat-name">Abby • ChurchBooks AI</div>
+                        <div class="chat-status">Online</div>
+                    </div>
+                </div>
+                <div class="chat-messages">
+                    <div class="message incoming">
+                        <p>Sunday offering was ₦200k. Spent ₦30k on fuel.</p>
+                        <span class="message-time">10:42 AM</span>
+                    </div>
+                    <div class="message outgoing">
+                        <p>Got it 👍 Here's the breakdown:</p>
+                        <p>• Offering — ₦200,000 (income)<br>• Fuel — ₦30,000 (expense)<br>Net: ₦155,000. Looks right?</p>
+                        <span class="message-time">10:42 AM ✓✓</span>
+                    </div>
+                    <div class="message incoming">
+                        <p>Yes ✅</p>
+                        <span class="message-time">10:43 AM</span>
+                    </div>
+                    <div class="message outgoing">
+                        <p>You're all caught up 🙌<br><br>📌 Fuel spending is 20% higher than last month. Just keeping you informed!</p>
+                        <span class="message-time">10:43 AM ✓✓</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge">Features</span>
+                <h2 class="section-title">Built for churches.<br>Powered by AI.</h2>
+                <p class="section-subtitle">No training needed. No new apps to download. Just WhatsApp.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🎙️</div>
+                    <h3>Voice Note Recording</h3>
+                    <p>Just talk. Abby understands Nigerian accents, Pidgin, and Yoruba. She records everything accurately.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>Smart Financial Insights</h3>
+                    <p>Alerts about spending trends, income drops, and opportunities. Like having a CFO in your pocket.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3>Pastor-Approved Corrections</h3>
+                    <p>No one can delete records without approval. Full audit trail protects everyone's integrity.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">👥</div>
+                    <h3>Team Roles</h3>
+                    <p>Pastors oversee, treasurers manage. Everyone sees what they need, nothing they don't.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📱</div>
+                    <h3>WhatsApp-First</h3>
+                    <p>No new app to learn. Works on the phone you already use. Even offline with voice notes.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📈</div>
+                    <h3>Auto Reports</h3>
+                    <p>Weekly reports sent every Monday. Monthly advisory from AI. Your finances on autopilot.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="how-it-works" id="how-it-works">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge">How It Works</span>
+                <h2 class="section-title">Three steps to clean books</h2>
+            </div>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3>Register Your Church</h3>
+                    <p>Sign up in 2 minutes. Add your pastor and treasurer. Everyone gets secure access.</p>
+                </div>
+                <div class="step-connector"></div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3>Send Voice Notes</h3>
+                    <p>After service, just WhatsApp Abby what happened. She'll confirm and save everything.</p>
+                </div>
+                <div class="step-connector"></div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3>Get Insights</h3>
+                    <p>Weekly reports, spending alerts, and monthly advisory. Financial health on autopilot.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing" id="pricing">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge">Early Access</span>
+                <h2 class="section-title">Everything free for 6 months</h2>
+                <p class="section-subtitle">We're in early access. Every feature, unlimited usage, zero cost until November 2026.</p>
+            </div>
+            <div class="pricing-grid single-plan">
+                <div class="pricing-card featured">
+                    <span class="pricing-badge">Early Access — Free</span>
+                    <h3>All Access</h3>
+                    <div class="price">₦0<span>/until Nov 2026</span></div>
+                    <ul class="pricing-features">
+                        <li>Unlimited transactions</li>
+                        <li>Voice note recording</li>
+                        <li>AI financial insights</li>
+                        <li>Weekly & monthly reports</li>
+                        <li>Up to 5 team members</li>
+                        <li>Priority support</li>
+                    </ul>
+                    <a href="/register" class="btn primary full-width">Get Started Free →</a>
+                    <p class="pricing-note">No credit card required. Cancel anytime.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section class="testimonials">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge">Testimonials</span>
+                <h2 class="section-title">Trusted by church leaders</h2>
+            </div>
+            <div class="testimonials-grid">
+                <div class="testimonial-card">
+                    <p>"Before ChurchBooks, we spent 3 hours every Monday reconciling. Now Abby does it while I sleep. It's honestly life-changing."</p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">👤</div>
+                        <div>
+                            <strong>Pastor Adeyemi</strong>
+                            <span>Grace Community Church, Lagos</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <p>"I was scared of losing offering records. Now everything is tracked, and the pastor can see it all. No more suspicion, just transparency."</p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">👤</div>
+                        <div>
+                            <strong>Sister Funke</strong>
+                            <span>Treasurer, Living Faith Abuja</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <p>"The AI caught that our utility spending increased 40% over 3 months. We renegotiated and saved ₦180k. This thing pays for itself."</p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">👤</div>
+                        <div>
+                            <strong>Deacon Emeka</strong>
+                            <span>St. Paul's Anglican, Enugu</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <div class="cta-box">
+                <h2>Ready to transform your church's finances?</h2>
+                <p>Join 200+ Nigerian churches already using ChurchBooks AI. Setup takes 2 minutes.</p>
+                <a href="/register" class="btn primary large">Register Your Church — Free</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="logo">
+                        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="ChurchBooks AI" class="logo-img">
+                        
+                    </div>
+                    <p>AI-powered financial management for Nigerian churches. Built with care by Intravent.</p>
+                </div>
+                <div class="footer-links">
+                    <h4>Product</h4>
+                    <a href="#features">Features</a>
+                    <a href="#pricing">Pricing</a>
+                    <a href="/register">Register</a>
+                </div>
+                <div class="footer-links">
+                    <h4>Company</h4>
+                    <a href="#">About</a>
+                    <a href="#">Blog</a>
+                    <a href="#">Contact</a>
+                </div>
+                <div class="footer-links">
+                    <h4>Legal</h4>
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms of Service</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© 2026 ChurchBooks AI by Intravent. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            menu.classList.toggle('active');
+        }
+        
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    document.getElementById('mobileMenu').classList.remove('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
