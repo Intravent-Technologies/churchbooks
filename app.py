@@ -307,6 +307,28 @@ def webhook():
             report = generate_weekly_report(sender_phone)
             resp.message(report)
             upsert_session(sender_phone, intent="generate_report", metadata={"name": name})
+
+        # --- DELETE REPORTS ---
+        elif intent == "delete_reports":
+            time_to_keep = entities.get("time_to_keep", "all")
+            from database import delete_old_transactions
+
+            if time_to_keep == "today":
+                deleted = delete_old_transactions(sender_phone, keep_days=1)
+                msg = f"Done ✅ All records older than today have been removed. Kept today's data."
+            elif time_to_keep == "week":
+                deleted = delete_old_transactions(sender_phone, keep_days=7)
+                msg = f"Done ✅ All records older than this week have been removed."
+            elif time_to_keep == "month":
+                deleted = delete_old_transactions(sender_phone, keep_days=30)
+                msg = f"Done ✅ All records older than this month have been removed."
+            else:
+                # Default: delete all
+                deleted = delete_old_transactions(sender_phone, keep_days=0)
+                msg = f"Done ✅ All records have been cleared. Send a new voice note to start recording."
+
+            resp.message(msg)
+            upsert_session(sender_phone, intent="delete_reports", metadata={"name": name})
             
         # --- NATURAL LANGUAGE INTENT HANDLING ---
         elif intent == "general_chat":

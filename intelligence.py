@@ -34,9 +34,9 @@ YOUR CORE DIRECTIVES:
 
 RETURN SCHEMA:
 {
-  "intent": "record_income" | "record_expense" | "query_balance" | "get_transactions" | "get_records_by_person" | "edit_pending" | "delete_transaction" | "generate_report" | "general_chat" | "clarification_needed",
+  "intent": "record_income" | "record_expense" | "query_balance" | "get_transactions" | "get_records_by_person" | "edit_pending" | "delete_transaction" | "delete_reports" | "generate_report" | "general_chat" | "clarification_needed",
   "extracted_name": "string or null",
-  "entities": {"amount": number|null, "category": "string|null", "date_range": "today|week|month|null", "person_name": "string|null"},
+  "entities": {"amount": number|null, "category": "string|null", "date_range": "today|week|month|null", "person_name": "string|null", "time_to_keep": "today|week|month|all|null"},
   "entries_for_recording": [{"type": "income|expense|transfer", "category": "string", "amount": number, "note": "string", "context": "string"}],
   "updated_pending_entries": [{"type": "income|expense|transfer", "category": "string", "amount": number, "note": "string", "context": "string"}],
   "response_text": "Clear, concise WhatsApp-friendly response",
@@ -46,6 +46,7 @@ RETURN SCHEMA:
 CRITICAL RULES:
 - For `edit_pending`: Return the COMPLETE updated list in `updated_pending_entries`.
 - For `delete_transaction`: If user says "Delete the fuel record from today", intent is `delete_transaction` and `entities.category` should be "fuel".
+- For `delete_reports`: If user says "Delete all old reports", "Remove last week's records", or "Keep only today's data", intent is `delete_reports`. Set `entities.time_to_keep` to the period they want to preserve (e.g., "today", "week", or "all" if they want to delete everything).
 - If user asks "Who counted offering?" or "Show me records by Papa", intent is `get_records_by_person`.
 - NEVER assume "offering" if the user just says "money". Use the user's exact words for categories whenever possible.
 - If confidence is low, set `intent` to `clarification_needed` and ask a specific question."""

@@ -315,3 +315,19 @@ def delete_all_sessions():
         supabase.table("sessions").delete().gt("created_at", "1900-01-01").execute()
     except Exception as e:
         logging.error(f"DB Error delete_all_sessions: {e}")
+
+def delete_old_transactions(sender_phone, keep_days=0):
+    """Delete transactions older than keep_days. If keep_days=0, delete all."""
+    try:
+        if keep_days == 0:
+            # Delete all transactions for this phone
+            response = supabase.table("transactions").delete().eq("sender_phone", sender_phone).execute()
+            return len(response.data) if response.data else 0
+        else:
+            # Delete transactions older than keep_days
+            cutoff = (datetime.now() - timedelta(days=keep_days)).isoformat()
+            response = supabase.table("transactions").delete().eq("sender_phone", sender_phone).lt("created_at", cutoff).execute()
+            return len(response.data) if response.data else 0
+    except Exception as e:
+        logging.error(f"DB Error delete_old_transactions: {e}")
+        return 0
