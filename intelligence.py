@@ -2,11 +2,7 @@ import os
 import json
 import logging
 from groq import Groq
-from database import (
-    save_pending, get_pending, delete_pending, save_transactions,
-    update_pending, get_transactions, get_transaction_by_id, update_transaction,
-    delete_transaction, search_transactions, get_balance_summary
-)
+from database import save_pending, get_pending, delete_pending, get_transactions
 
 logging.basicConfig(level=logging.INFO)
 
