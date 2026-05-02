@@ -1,36 +1,59 @@
 import os
+import re
+import json
 import logging
+import tempfile
+import subprocess
 from groq import Groq
 
 logging.basicConfig(level=logging.INFO)
 
 SUPPORTED_EXTENSIONS = ['.mp3', '.mp4', '.mpeg', '.mpga', '.m4a', '.wav', '.webm', '.ogg']
 
+# Optimized prompt for Nigerian church financial context
 WHISPER_PROMPT = (
-    "Nigerian church financial record. Amounts in Naira. "
-    "Names like Emeka, Funke, Tunde, Adewale, Chinedu, Olumide, Blessing, Chioma. "
-    "Words: offering, tithe, thanksgiving, welfare, generator, fuel, salary, "
-    "first fruit, convention, building fund, love seed, seed offering."
+    "You are transcribing Nigerian church financial records. "
+    "Speakers have Nigerian accents and may mix English with Nigerian Pidgin. "
+    "Key terms: offering, tithe, thanksgiving, welfare, building fund, "
+    "first fruit, seed offering, convention, workers forum, night vigil, "
+    "Sunday service, youth conference, harvest, pastor, treasurer. "
+    "Money amounts: 'fifty thousand' means 50,000. 'two fifty' means 250,000. "
+    "Names like Emeka, Funke, Tunde, Adewale, Chinedu, Olumide, Blessing, Chioma, "
+    "Ngozi, Adebayo, Folake, Kemi, Segun, Bisi, Nkechi, Chuka, Ifeoma. "
+    "Transcribe exactly what is said, do not correct grammar."
 )
+
+def convert_to_wav(input_path):
+    """Convert any audio file to 16kHz mono WAV for optimal Whisper accuracy."""
+    try:
+        # Try ffmpeg first (best quality)
+        output_path = tempfile.mktemp(suffix=".wav")
+        
+        result = subprocess.run([
+            'ffmpeg', '-y', '-i', input_path,
+            '-ar', '16000',    # 16kHz sample rate (optimal for Whisper)
+            '-ac', '1',        # Mono
+            '-codec:a', 'pcm_s16le',  # 16-bit PCM
+            '-b:a', '128k',    # Bitrate
+            '-af', 'highpass=f=200,lowpass=f=3000,volume=2.0',  # Voice band + boost
+            output_path
+        ], capture_output=True, text=True, timeout=30)
+        
+        if result.returncode == 0 and os.path.exists(output_path):
+            logging.info(f"Converted audio to WAV: {os.path.getsize(output_path)} bytes")
+            return output_path
+            
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        pass
+    
+    # Fallback: return original path (let Groq try)
+    logging.warning("ffmpeg not available, using original audio format")
+    return input_path
 
 def get_audio_format(file_path):
     """Check if the audio file format is supported by Whisper."""
     ext = os.path.splitext(file_path)[1].lower()
-    if ext not in SUPPORTED_EXTENSIONS:
-        return None
-    return ext
-
-def get_audio_duration(file_path):
-    """Get audio duration in seconds. Returns None if unable to determine."""
-    try:
-        # Try using file size as rough estimate (opus ogg ~1KB/s)
-        # This is a fallback - Whisper itself will handle most files fine
-        file_size = os.path.getsize(file_path)
-        # Rough estimate: ~1.5KB/s for WhatsApp opus, ~3KB/s for m4a
-        estimated_duration = file_size / 2000  # conservative estimate
-        return estimated_duration
-    except Exception:
-        return None
+    return ext if ext in SUPPORTED_EXTENSIONS else None
 
 def transcribe_audio(file_path):
     """Transcribe audio with maximum accuracy for Nigerian/world accents.
@@ -51,14 +74,14 @@ def transcribe_audio(file_path):
 
     # Duration pre-check (rough estimate via file size)
     # WhatsApp opus: ~1-2KB/s. 1 second min = ~2KB. 5 min max = ~600KB (generous)
-    if file_size < 2000:
+    if file_size < 1000:  # Lowered from 2000 to allow very short notes
         return {
             "text": None,
             "segments": [],
             "confidence_scores": [],
             "error": "too_short"
         }
-    if file_size > 3000000:  # ~3MB generous upper bound
+    if file_size > 5000000:  # 5MB generous upper bound
         return {
             "text": None,
             "segments": [],
@@ -66,15 +89,20 @@ def transcribe_audio(file_path):
             "error": "too_long"
         }
 
+    # Convert to WAV for optimal Whisper accuracy
+    wav_path = convert_to_wav(file_path)
+    use_wav = wav_path != file_path
+    
     try:
         client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
-        with open(file_path, "rb") as f:
+        with open(wav_path, "rb") as f:
             transcription = client.audio.transcriptions.create(
                 model="whisper-large-v3",
                 file=f,
                 response_format="verbose_json",
-                language="en",
+                temperature=0.0,      # Deterministic output
                 prompt=WHISPER_PROMPT
+                # No language specified - auto-detect for better Nigerian Pidgin support
             )
 
         # Build return dict
@@ -101,3 +129,10 @@ def transcribe_audio(file_path):
     except Exception as e:
         logging.error(f"STT error: {e}")
         return None
+    finally:
+        # Clean up temporary WAV file if we created one
+        if use_wav and os.path.exists(wav_path):
+            try:
+                os.remove(wav_path)
+            except Exception:
+                pass
