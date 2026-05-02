@@ -116,7 +116,7 @@ def webhook():
     except Exception as e:
         safe_log_error(e, "webhook", phone)
         name = get_user_display_name(phone)
-        resp.message(f"DEBUG ERROR: {str(e)}")
+        resp.message(fallback_response(name))
         return str(resp)
 
 # ============================================================
