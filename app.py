@@ -106,7 +106,7 @@ def webhook():
             return handle_unknown_user(resp, phone, message_body, session)
         
         if user.get("onboarding_step", 0) < 5:
-            return handle_onboarding(resp, phone, message_body, user, session)
+            return handle_onboarding(resp, phone, message_body, media_url, media_type, user, session)
         
         # 5. Fully registered user — normal flow
         return handle_registered_user(
@@ -155,17 +155,16 @@ def handle_unknown_user(resp, phone, message_body, session):
 # ONBOARDING — Steps 1-4
 # ============================================================
 
-def handle_onboarding(resp, phone, message_body, user, session):
+def handle_onboarding(resp, phone, message_body, media_url, media_type, user, session):
     """Route to the correct onboarding step."""
     try:
         step = user.get("onboarding_step", 0)
         first_name = user.get("first_name") or get_user_display_name(phone)
         
         if step == 0:
-            # Shouldn't happen after create_user, but handle it
             return _onboarding_step_0(resp, phone, message_body, user)
         elif step == 1:
-            return _onboarding_step_1(resp, phone, message_body, user)
+            return _onboarding_step_1(resp, phone, message_body, media_url, media_type, user)
         elif step == 2:
             return _onboarding_step_2(resp, phone, message_body, user)
         elif step == 3:
@@ -173,7 +172,6 @@ def handle_onboarding(resp, phone, message_body, user, session):
         elif step == 4:
             return _onboarding_step_4(resp, phone, message_body, user)
         else:
-            # Step >= 5 but onboarding flag still set — complete it
             complete_onboarding(phone)
             return handle_registered_user(resp, phone, message_body, None, None, user, session)
             
@@ -200,8 +198,22 @@ def _onboarding_step_0(resp, phone, message_body, user):
     update_session_context(phone, message_body, reply)
     return str(resp)
 
-def _onboarding_step_1(resp, phone, message_body, user):
+def _onboarding_step_1(resp, phone, message_body, media_url, media_type, user):
     """Waiting for name (state: ONBOARDING_1)"""
+    # Handle voice notes by transcribing first
+    if media_url and media_type and "audio" in media_type:
+        try:
+            audio_path = download_audio(media_url)
+            transcription = transcribe_audio(audio_path)
+            message_body = transcription.get("text", "").strip()
+            import os
+            if os.path.exists(audio_path):
+                os.remove(audio_path)
+        except Exception as e:
+            safe_log_error(e, "_onboarding_step_1_voice", phone)
+            resp.message("Sorry, I couldn't understand that. Please type your full name or send a clearer voice note 😊\nFor example: *Grace Adeyemi* or *Pastor James Okafor*")
+            return str(resp)
+    
     valid, error_msg = validate_name(message_body)
     
     if not valid:
