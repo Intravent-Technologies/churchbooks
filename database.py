@@ -66,8 +66,13 @@ def save_transactions(sender_phone, entries):
             # Append context to note for searching people later
             context = entry.get("context", "")
             final_note = entry.get("note", "")
+            programme = entry.get("programme", "")
+            
+            # Build note with context and programme
             if context:
                 final_note = f"{final_note} [Context: {context}]"
+            if programme:
+                final_note = f"{final_note} [Programme: {programme}]"
                 
             payload.append({
                 "church_id": sender_phone,

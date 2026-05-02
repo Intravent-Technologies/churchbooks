@@ -17,14 +17,30 @@ def generate_weekly_report(sender_phone):
         
         income = {}
         expenses = {}
+        programme_breakdown = {}
         
         for t in transactions:
             cat = t["category"].capitalize()
             amount = int(t["amount"])
+            note = t.get("note", "")
+            
+            # Extract programme from note
+            programme = "General"
+            if "[Programme:" in note:
+                programme = note.split("[Programme:")[1].split("]")[0].strip()
+            
             if t["type"] == "income":
                 income[cat] = income.get(cat, 0) + amount
             else:
                 expenses[cat] = expenses.get(cat, 0) + amount
+            
+            # Track by programme
+            if programme not in programme_breakdown:
+                programme_breakdown[programme] = {"income": 0, "expenses": 0}
+            if t["type"] == "income":
+                programme_breakdown[programme]["income"] += amount
+            else:
+                programme_breakdown[programme]["expenses"] += amount
                 
         total_income = sum(income.values())
         total_expenses = sum(expenses.values())
@@ -32,6 +48,15 @@ def generate_weekly_report(sender_phone):
         
         income_str = "\n".join([f"{k.ljust(14)} {format_naira(v)}" for k, v in income.items()]) if income else "None"
         expense_str = "\n".join([f"{k.ljust(14)} {format_naira(v)}" for k, v in expenses.items()]) if expenses else "None"
+        
+        # Programme summary
+        programme_str = ""
+        if programme_breakdown:
+            programme_lines = ["\n*BY PROGRAMME:*"]
+            for prog, vals in programme_breakdown.items():
+                prog_net = vals["income"] - vals["expenses"]
+                programme_lines.append(f"{prog}: {format_naira(prog_net)}")
+            programme_str = "\n".join(programme_lines)
         
         report = f"""📊 *Weekly Report*
 Week of {start_date.strftime('%b %d')} – {now.strftime('%b %d')}
@@ -45,7 +70,7 @@ Total Income:  {format_naira(total_income)}
 {expense_str}
 ─────────────────
 Total Expenses: {format_naira(total_expenses)}
-
+{programme_str}
 *NET:* {format_naira(net)}
 
 _ChurchBooks AI • Send REPORT for monthly summary_"""

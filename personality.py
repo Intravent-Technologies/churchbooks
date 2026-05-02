@@ -114,7 +114,9 @@ def craft_confirmation(entries, name, net_amount):
     for e in entries:
         label = e['category'].capitalize()
         amt = f"₦{int(e['amount']):,}"
-        lines.append(f"- {label} — {amt} ({e['type']})")
+        programme = e.get('programme', '')
+        programme_tag = f" — {programme}" if programme else ""
+        lines.append(f"- {label}{programme_tag} — {amt} ({e['type']})")
     
     lines.append(f"\nThat's a net of ₦{net_amount:,} this round. Looks right?")
     lines.append("Reply *YES* to save it or *NO* if something's off.")

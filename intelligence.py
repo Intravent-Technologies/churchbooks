@@ -18,27 +18,33 @@ YOUR CORE DIRECTIVES:
    - NEVER extract names mentioned in transactions. If someone says "Give 500 to Mama Ngozi" or "Paid Pastor John", those are NOT the user's name — they are transaction participants.
    - If unsure, return null for `extracted_name`.
 2. **Currency**: All amounts are in Nigerian Naira (₦) by default. When user says "4,390" or "fifty thousand", treat it as ₦4,390 or ₦50,000. No need for explicit "Naira" mention.
-3. **Strict Literalism**: NEVER categorize a transaction unless the specific word is used or the intent is 100% clear.
+3. **Programme Tagging**: ALWAYS extract and tag the programme/event name for each transaction.
+   - Look for programme names: "Sunday Service", "Youth Conference", "Easter Programme", "Building Project", "Night Vigil", "Workers Forum", "Harvest Sunday".
+   - Tag every entry with the programme it belongs to in the `programme` field.
+   - If user says "For the youth conference, we spent 50k on food and 20k on transport" → Both entries get `programme: "Youth Conference"`.
+   - If user says "Sunday offering was 200k" → `programme: "Sunday Service"`.
+   - If no programme is mentioned, set `programme` to `null` or infer from context (e.g., if it's Sunday and they say "offering", tag as "Sunday Service").
+4. **Strict Literalism**: NEVER categorize a transaction unless the specific word is used or the intent is 100% clear.
    - If user says "withdrew", "took out", "cashed" → Category is "Withdrawal" (type: "transfer"). Do NOT call it "Offering" or "Expense".
    - If user says "paid", "spent", "gave", "bought" → Category is the item/person paid (e.g., "Fuel", "Pastor").
    - If user says "received", "collected", "got" → Category is the source (e.g., "Offering", "Donor").
-4. **People & Context Extraction**: You must extract WHO is involved in the transaction.
+5. **People & Context Extraction**: You must extract WHO is involved in the transaction.
    - Look for names (Papa, Mama, Miss Engage, Brother John, Pastor Tunde) and roles (Pastor, Treasurer, Usher).
    - Look for actions: "approved", "counted", "submitted", "delivered", "witnessed".
    - Store this in the `context` field as a string: "Approved by Papa | Counted by Miss Engage".
-5. **Contextual Reasoning**:
+6. **Contextual Reasoning**:
    - "We withdrew 50k for fuel" → Entry 1: Withdrawal (50k). Entry 2: Fuel (50k).
    - "Miss Engage counted offering of 200k" → Category: Offering, Amount: 200k, Context: "Counted by Miss Engage".
-6. **Ambiguity Handling**: If a transaction is vague, set `confidence` to "low" and ask for clarification.
-7. **Strict JSON Output**: Return ONLY valid JSON matching the exact schema. No markdown. No extra text.
+7. **Ambiguity Handling**: If a transaction is vague, set `confidence` to "low" and ask for clarification.
+8. **Strict JSON Output**: Return ONLY valid JSON matching the exact schema. No markdown. No extra text.
 
 RETURN SCHEMA:
 {
   "intent": "record_income" | "record_expense" | "query_balance" | "get_transactions" | "get_records_by_person" | "edit_pending" | "delete_transaction" | "delete_reports" | "generate_report" | "general_chat" | "clarification_needed",
   "extracted_name": "string or null",
   "entities": {"amount": number|null, "category": "string|null", "date_range": "today|week|month|null", "person_name": "string|null", "time_to_keep": "today|week|month|all|null"},
-  "entries_for_recording": [{"type": "income|expense|transfer", "category": "string", "amount": number, "note": "string", "context": "string"}],
-  "updated_pending_entries": [{"type": "income|expense|transfer", "category": "string", "amount": number, "note": "string", "context": "string"}],
+  "entries_for_recording": [{"type": "income|expense|transfer", "category": "string", "amount": number, "note": "string", "context": "string", "programme": "string|null"}],
+  "updated_pending_entries": [{"type": "income|expense|transfer", "category": "string", "amount": number, "note": "string", "context": "string", "programme": "string|null"}],
   "response_text": "Clear, concise WhatsApp-friendly response",
   "confidence": "high|low"
 }
@@ -49,6 +55,7 @@ CRITICAL RULES:
 - For `delete_reports`: If user says "Delete all old reports", "Remove last week's records", or "Keep only today's data", intent is `delete_reports`. Set `entities.time_to_keep` to the period they want to preserve (e.g., "today", "week", or "all" if they want to delete everything).
 - If user asks "Who counted offering?" or "Show me records by Papa", intent is `get_records_by_person`.
 - NEVER assume "offering" if the user just says "money". Use the user's exact words for categories whenever possible.
+- ALWAYS tag the programme/event name for every entry when mentioned.
 - If confidence is low, set `intent` to `clarification_needed` and ask a specific question."""
 
 def extract_name_and_role(message):
