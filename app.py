@@ -178,9 +178,10 @@ def webhook():
         confidence = analysis.get("confidence", "low")
         entities = analysis.get("entities", {})
         
-        # Extract name from conversation if mentioned (even after onboarding)
-        extracted_name = analysis.get("extracted_name") or extract_name_and_role(body).get("name")
-        if extracted_name and extracted_name.lower() != name.lower():
+        # Only update name if user explicitly introduces themselves (via AI analysis)
+        # NEVER extract names from transaction context — those are other people
+        extracted_name = analysis.get("extracted_name")
+        if extracted_name and metadata.get("name", "").lower() != extracted_name.lower():
             metadata["name"] = extracted_name
             name = extracted_name.split()[0].capitalize()
         
