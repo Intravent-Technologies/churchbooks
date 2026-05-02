@@ -148,7 +148,7 @@ def handle_unknown_user(resp, phone, message_body, session):
         
     except Exception as e:
         safe_log_error(e, "handle_unknown_user", phone)
-        resp.message(f"DEBUG ERROR: {str(e)}")
+        resp.message("Hello! Welcome to Ledgr Chapel. Please try again in a moment 🙏")
     
     return str(resp)
 
@@ -192,7 +192,7 @@ def handle_onboarding(resp, phone, message_body, media_url, media_type, user, se
             
     except Exception as e:
         safe_log_error(e, "handle_onboarding", phone)
-        resp.message(f"DEBUG ERROR: {str(e)}")
+        resp.message(fallback_response("Friend"))
     
     return str(resp)
 
@@ -356,7 +356,7 @@ def _onboarding_step_3(resp, phone, message_body, user):
         else:
             resp.message("Something went wrong. Please try again 🙏")
     
-    update_session_context(phone, message_body, resp.messages[0].body if resp.messages else "")
+    update_session_context(phone, message_body, reply)
     return str(resp)
 
 def _onboarding_step_4(resp, phone, message_body, user):
