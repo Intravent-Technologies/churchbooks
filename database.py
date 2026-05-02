@@ -311,6 +311,7 @@ def _create_session(phone, now):
     """Create a new session record."""
     expires = (datetime.utcnow() + timedelta(hours=SESSION_ACTIVE_HOURS)).isoformat()
     payload = {
+        "sender_phone": phone,
         "phone": phone,
         "state": ConversationState.UNKNOWN,
         "pending_transaction_id": None,
