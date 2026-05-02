@@ -3,9 +3,9 @@ import logging
 from apscheduler.schedulers.background import BackgroundScheduler
 import pytz
 from reports import send_report_to_all
-from financial_advisor import generate_monthly_advisory, get_all_active_phones
+from financial_advisor import generate_monthly_advisory
 from reports import send_twilio_message
-from database import get_weekly_feature_requests
+from database import get_weekly_feature_requests, get_all_active_phones
 
 logging.basicConfig(level=logging.INFO)
 

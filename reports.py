@@ -2,7 +2,7 @@ import os
 import logging
 from datetime import datetime, timedelta
 from twilio.rest import Client
-from database import get_transactions, get_monthly_transactions, get_all_active_phones
+from database import get_transactions, get_all_active_phones
 
 logging.basicConfig(level=logging.INFO)
 
@@ -81,7 +81,7 @@ _ChurchBooks AI • Send REPORT for monthly summary_"""
 
 def generate_monthly_report(sender_phone):
     try:
-        transactions = get_monthly_transactions(sender_phone)
+        transactions = get_transactions(sender_phone, days=30)
         
         income = {}
         expenses = {}
