@@ -36,7 +36,7 @@ from database import (
 from reports import generate_weekly_report
 from scheduler import scheduler
 from web_routes import web
-from whatsapp_api import send_whatsapp_message, download_media, META_VERIFY_TOKEN
+from whatsapp_api import send_whatsapp_message, download_media
 
 logging.basicConfig(level=logging.INFO)
 
@@ -85,52 +85,56 @@ def _transcribe_audio_from_media_id(media_id):
 
 @app.route("/webhook", methods=["GET"])
 def webhook_verify():
-    """Meta webhook verification."""
-    mode = request.args.get("hub.mode")
-    token = request.args.get("hub.verify_token")
-    challenge = request.args.get("hub.challenge")
-    if mode == "subscribe" and token == META_VERIFY_TOKEN:
-        logging.info("Webhook verified successfully")
-        return challenge, 200
-    return "Forbidden", 403
+    """Webhook verification (for platform setup)."""
+    return "ok", 200
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    """Handle incoming WhatsApp messages from Meta."""
+    """Handle incoming WhatsApp messages from Evolution API."""
     body = request.get_json(silent=True)
     if not body:
         return jsonify({"status": "error", "message": "No JSON body"}), 400
 
     try:
-        entry = body.get("entry", [{}])[0]
-        changes = entry.get("changes", [{}])[0]
-        value = changes.get("value", {})
+        # Evolution API payload format
+        event = body.get("event", "")
+        data = body.get("data", {})
 
-        messages = value.get("messages", [])
-        if not messages:
+        if event != "messages.upsert":
             return jsonify({"status": "ignored"}), 200
 
-        message = messages[0]
-        contact = value.get("contacts", [{}])[0]
+        key = data.get("key", {})
+        raw_phone = key.get("remoteJid", "")
+        # Strip "@s.whatsapp.net" suffix
+        phone = clean_phone(raw_phone.split("@")[0] if "@" in raw_phone else raw_phone)
 
-        raw_phone = contact.get("wa_id", "")
-        phone = clean_phone(raw_phone)
-        message_type = message.get("type", "")
-
+        message = data.get("message", {})
         message_body = ""
         media_id = None
         media_type = ""
 
-        if message_type == "text":
-            message_body = message.get("text", {}).get("body", "").strip()
-        elif message_type == "audio":
-            media_id = message.get("audio", {}).get("id")
-            media_type = message.get("audio", {}).get("mime_type", "audio/ogg")
-        elif message_type in ["voice", "document", "image"]:
-            media_id = message.get(message_type, {}).get("id", "")
-            media_type = message.get(message_type, {}).get("mime_type", "")
-            if media_type and "audio" in media_type:
-                message_type = "audio"
+        # Text message
+        if "conversation" in message:
+            message_body = message["conversation"].strip()
+        elif "extendedTextMessage" in message:
+            message_body = message["extendedTextMessage"].get("text", "").strip()
+        # Audio/voice note
+        elif "audioMessage" in message:
+            audio = message["audioMessage"]
+            media_id = audio.get("url", "")
+            media_type = "audio/ogg"
+        # Document/image/video with audio
+        elif "documentMessage" in message:
+            doc = message["documentMessage"]
+            if doc.get("mimetype", "").startswith("audio"):
+                media_id = doc.get("url", "")
+                media_type = doc.get("mimetype", "audio/ogg")
+            else:
+                message_body = f"[Document: {doc.get('fileName', 'file')}]"
+        elif "imageMessage" in message:
+            caption = message["imageMessage"].get("caption", "")
+            if caption:
+                message_body = caption.strip()
 
         if not phone:
             return jsonify({"status": "ignored"}), 200
