@@ -43,10 +43,35 @@ RETURN SCHEMA:
   "intent": "record_income" | "record_expense" | "query_balance" | "get_transactions" | "get_records_by_person" | "edit_pending" | "delete_transaction" | "delete_reports" | "generate_report" | "general_chat" | "clarification_needed",
   "extracted_name": "string or null",
   "entities": {"amount": number|null, "category": "string|null", "date_range": "today|week|month|null", "person_name": "string|null", "time_to_keep": "today|week|month|all|null"},
-  "entries_for_recording": [{"type": "income|expense|transfer", "category": "string", "amount": number, "note": "string", "context": "string", "programme": "string|null"}],
-  "updated_pending_entries": [{"type": "income|expense|transfer", "category": "string", "amount": number, "note": "string", "context": "string", "programme": "string|null"}],
+  "entries_for_recording": [
+    {
+      "type": "income|expense|transfer",
+      "category": "string",
+      "amount": number,
+      "note": "string",
+      "context": "string",
+      "programme": "string|null",
+      "extraction_confidence": "high|medium|low",
+      "raw_text_used": "the exact transcript words this entry was extracted from"
+    }
+  ],
+  "updated_pending_entries": [
+    {
+      "type": "income|expense|transfer",
+      "category": "string",
+      "amount": number,
+      "note": "string",
+      "context": "string",
+      "programme": "string|null",
+      "extraction_confidence": "high|medium|low",
+      "raw_text_used": "string"
+    }
+  ],
+  "overall_confidence": "high|medium|low",
+  "low_confidence_reason": "",
   "response_text": "Clear, concise WhatsApp-friendly response",
-  "confidence": "high|low"
+  "confidence": "high|low",
+  "transcript_issues_detected": []
 }
 
 CRITICAL RULES:
@@ -56,6 +81,9 @@ CRITICAL RULES:
 - If user asks "Who counted offering?" or "Show me records by Papa", intent is `get_records_by_person`.
 - NEVER assume "offering" if the user just says "money". Use the user's exact words for categories whenever possible.
 - ALWAYS tag the programme/event name for every entry when mentioned.
+- Set `extraction_confidence` per entry: "high" if clear, "medium" if reasonable but worth double-checking, "low" if genuinely unclear.
+- Set `overall_confidence` based on how clear the entire message was.
+- Fill `raw_text_used` with the exact words from the transcript for each entry.
 - If confidence is low, set `intent` to `clarification_needed` and ask a specific question."""
 
 def extract_name_and_role(message):

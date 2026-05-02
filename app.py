@@ -15,7 +15,7 @@ from extract import extract_entries
 from intelligence import analyze_message, extract_name_and_role
 from personality import (
     craft_response, craft_confirmation, craft_error, craft_help,
-    append_insight, extract_intent_natural, get_first_name,
+    craft_smart_confirmation, append_insight, extract_intent_natural, get_first_name,
     craft_onboarding_welcome, craft_onboarding_name_saved, craft_onboarding_complete
 )
 from financial_advisor import run_background_insights
@@ -159,12 +159,37 @@ def webhook():
     # --- NORMAL FLOW (after onboarding or for registered users) ---
     try:
         transcript = body.lower()
+        transcript_issues = []
         
         if media_url:
             audio_path = None
             try:
                 audio_path = download_audio(media_url)
-                transcript = transcribe_audio(audio_path)
+                result = transcribe_audio(audio_path)
+                
+                if result is None:
+                    resp.message(f"I couldn't read that audio format, {name} 😕 Try sending the voice note directly in WhatsApp rather than as a file attachment 🙏")
+                    return str(resp)
+                
+                if result.get("error") == "too_short":
+                    resp.message(f"That voice note was too short for me to catch, {name} 😊 Try again and hold the record button a little longer.")
+                    return str(resp)
+                
+                if result.get("error") == "too_long":
+                    resp.message(f"That's a long one, {name}! Voice notes work best under 5 minutes. Try splitting it into two shorter notes 🙏")
+                    return str(resp)
+                
+                transcript = result.get("text", "").lower()
+                if not transcript:
+                    resp.message(f"I couldn't catch any words in that voice note, {name} 😕 Could you try again? Speak clearly and pause briefly between items 🙏")
+                    return str(resp)
+                
+                # Check for low-confidence segments
+                if result.get("confidence_scores"):
+                    for i, score in enumerate(result["confidence_scores"]):
+                        if score < -0.5:
+                            seg_text = result["segments"][i].get("text", "") if result.get("segments") else ""
+                            transcript_issues.append(f"unclear segment: '{seg_text.strip()}'")
             finally:
                 if audio_path and os.path.exists(audio_path):
                     os.remove(audio_path)
@@ -198,10 +223,13 @@ def webhook():
             else:
                 save_pending(sender_phone, entries, transcript)
                 net = sum(int(e['amount']) if e['type'] == 'income' else -int(e['amount']) for e in entries)
-                msg = craft_confirmation(entries, name, net)
+                overall_conf = analysis.get("overall_confidence", "high")
+                low_reason = analysis.get("low_confidence_reason", "")
+                issues = analysis.get("transcript_issues_detected", [])
+                msg = craft_smart_confirmation(entries, name, net, overall_conf, low_reason, issues)
                 resp.message(msg)
                 session["context"].append({"role": "assistant", "content": "pending_confirmation", "timestamp": datetime.now().isoformat()})
-                upsert_session(sender_phone, intent=intent, context_entry=session["context"][-1], metadata={"last_entries": entries})
+                upsert_session(sender_phone, intent=intent, context_entry=session["context"][-1], metadata={"last_entries": entries, "overall_confidence": overall_conf})
         
         elif intent == "edit_pending" and pending:
             updated_entries = analysis.get("updated_pending_entries", pending.get("entries", []))
@@ -235,6 +263,50 @@ def webhook():
                     resp.message(f"Hmm, I couldn't find a record for {category} to delete, {name}.")
             else:
                 resp.message(f"Please tell me which item to delete, {name} (e.g., 'Delete the fuel record').")
+
+        # --- NUMBER CLARIFICATION (for medium confidence entries) ---
+        elif body.strip().isdigit() and pending and pending.get("entries"):
+            clarification_amount = int(body.strip())
+            # Find the first medium/low confidence entry and update it
+            updated = False
+            for entry in pending["entries"]:
+                if entry.get("extraction_confidence") in ["medium", "low"]:
+                    old_amount = int(entry["amount"])
+                    # If user typed a small number like 15 or 50, interpret as thousands
+                    if clarification_amount < 1000:
+                        clarification_amount *= 1000
+                    entry["amount"] = clarification_amount
+                    entry["extraction_confidence"] = "high"
+                    entry["raw_text_used"] = f"Clarified: {clarification_amount:,}"
+                    updated = True
+                    break
+            
+            if updated:
+                update_pending(sender_phone, pending["entries"])
+                net = sum(int(e['amount']) if e['type'] == 'income' else -int(e['amount']) for e in pending["entries"])
+                lines = [f"Got it — updating that to ₦{clarification_amount:,} ✅\n\nHere's the updated record:\n"]
+                for e in pending["entries"]:
+                    label = e['category'].capitalize()
+                    amt = f"₦{int(e['amount']):,}"
+                    programme = e.get('programme', '')
+                    programme_tag = f" — {programme}" if programme else ""
+                    corrected = " (corrected)" if e.get("extraction_confidence") == "high" and e.get("raw_text_used", "").startswith("Clarified") else ""
+                    lines.append(f"- {label}{programme_tag} — {amt}{corrected}")
+                
+                income_total = sum(int(e['amount']) for e in pending["entries"] if e['type'] == 'income')
+                expense_total = sum(int(e['amount']) for e in pending["entries"] if e['type'] == 'expense')
+                if income_total > 0 and expense_total > 0:
+                    net_display = f"₦{net:,}" if net >= 0 else f"-₦{abs(net):,}"
+                    lines.append(f"\nNet: ₦{income_total:,} income, ₦{expense_total:,} expenses ({net_display})")
+                elif income_total > 0:
+                    lines.append(f"\nTotal income: ₦{income_total:,}")
+                elif expense_total > 0:
+                    lines.append(f"\nTotal expenses: ₦{expense_total:,}")
+                
+                lines.append("\nReply *YES* to save 🙏")
+                resp.message("\n".join(lines))
+            else:
+                resp.message(f"Thanks, {name}. Reply *YES* to save the record or *NO* to cancel.")
 
         # --- YES/NO FLOW ---
         elif body.strip().lower() == "yes":

@@ -122,6 +122,94 @@ def craft_confirmation(entries, name, net_amount):
     lines.append("Reply *YES* to save it or *NO* if something's off.")
     return "\n".join(lines)
 
+def craft_smart_confirmation(entries, name, net_amount, overall_confidence, low_confidence_reason="", transcript_issues=None):
+    """Intelligent confirmation based on confidence level."""
+    high_entries = [e for e in entries if e.get('extraction_confidence') == 'high']
+    medium_entries = [e for e in entries if e.get('extraction_confidence') == 'medium']
+    low_entries = [e for e in entries if e.get('extraction_confidence') == 'low']
+    
+    if overall_confidence == "high":
+        # Standard warm confirmation
+        lines = [f"Got it, {name} 👍 Here's what I caught:\n"]
+        for e in entries:
+            label = e['category'].capitalize()
+            amt = f"₦{int(e['amount']):,}"
+            programme = e.get('programme', '')
+            programme_tag = f" — {programme}" if programme else ""
+            lines.append(f"- {label}{programme_tag} — {amt} ✅")
+            # Show raw text for medium confidence entries
+            if e.get('extraction_confidence') == 'medium' and e.get('raw_text_used'):
+                lines.append(f"  _(from: '{e['raw_text_used']}')_")
+        
+        income_total = sum(int(e['amount']) for e in entries if e['type'] == 'income')
+        expense_total = sum(int(e['amount']) for e in entries if e['type'] == 'expense')
+        
+        if income_total > 0 and expense_total > 0:
+            net_display = f"₦{net_amount:,}" if net_amount >= 0 else f"-₦{abs(net_amount):,}"
+            lines.append(f"\nNet: ₦{income_total:,} income, ₦{expense_total:,} expenses ({net_display})")
+        elif income_total > 0:
+            lines.append(f"\nTotal income: ₦{income_total:,}")
+        elif expense_total > 0:
+            lines.append(f"\nTotal expenses: ₦{expense_total:,}")
+        
+        lines.append("Looks right? Reply *YES* to save or *NO* if anything's off.")
+        return "\n".join(lines)
+    
+    elif overall_confidence == "medium":
+        # Flag uncertain entries
+        lines = [f"I got most of that, {name} — just want to double-check:\n"]
+        
+        for e in high_entries:
+            label = e['category'].capitalize()
+            amt = f"₦{int(e['amount']):,}"
+            programme = e.get('programme', '')
+            programme_tag = f" — {programme}" if programme else ""
+            lines.append(f"✅ {label}{programme_tag} — {amt} (clear)")
+        
+        for e in medium_entries:
+            label = e['category'].capitalize()
+            amt = f"₦{int(e['amount']):,}"
+            programme = e.get('programme', '')
+            programme_tag = f" — {programme}" if programme else ""
+            lines.append(f"❓ {label}{programme_tag} — {amt}")
+            if e.get('raw_text_used'):
+                lines.append(f"  _(I heard '{e['raw_text_used']}' — is that right?)_")
+        
+        for e in low_entries:
+            label = e['category'].capitalize()
+            amt = f"₦{int(e['amount']):,}"
+            programme = e.get('programme', '')
+            programme_tag = f" — {programme}" if programme else ""
+            lines.append(f"⚠️ {label}{programme_tag} — {amt} (unclear)")
+        
+        lines.append(f"\nReply *YES* if it's correct, *NO* to cancel, or tell me what to fix.")
+        return "\n".join(lines)
+    
+    else:
+        # Low confidence — don't guess
+        snippet = ""
+        if low_entries and low_entries[0].get('raw_text_used'):
+            snippet = low_entries[0]['raw_text_used']
+        elif medium_entries and medium_entries[0].get('raw_text_used'):
+            snippet = medium_entries[0]['raw_text_used']
+        
+        if not snippet:
+            snippet = low_confidence_reason if low_confidence_reason else "parts of the audio were unclear"
+        
+        lines = [
+            f"I caught some of that but I'm not confident enough to save it as-is, {name} 🙏",
+            f"",
+            f"What I heard: '{snippet}'",
+            f"",
+            f"Could you try again? A few tips:",
+            f"- Speak the amounts clearly: 'one hundred and fifty thousand naira'",
+            f"- Pause briefly between each item",
+            f"- If you're in a noisy place, move somewhere quieter",
+            f"",
+            f"I want to make sure every figure is exactly right 💛"
+        ]
+        return "\n".join(lines)
+
 def craft_error(name):
     return (
         f"Hmm, I didn't quite catch the figures in that one, {name} 🙏\n"
