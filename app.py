@@ -15,7 +15,8 @@ from extract import extract_entries
 from intelligence import analyze_message, extract_name_and_role
 from personality import (
     craft_response, craft_confirmation, craft_error, craft_help,
-    craft_smart_confirmation, append_insight, extract_intent_natural, get_first_name,
+    craft_smart_confirmation, craft_unsupported_response, craft_stats_response,
+    append_insight, extract_intent_natural, get_first_name,
     craft_onboarding_welcome, craft_onboarding_name_saved, craft_onboarding_complete
 )
 from financial_advisor import run_background_insights
@@ -25,7 +26,8 @@ from database import (
     get_transactions, get_transaction_by_id, update_transaction,
     delete_transaction_by_details, search_transactions_by_person,
     search_transactions, get_balance_summary,
-    upsert_session, get_session, delete_session, delete_all_sessions
+    upsert_session, get_session, delete_session, delete_all_sessions,
+    log_unsupported_request, get_system_stats, increment_stat
 )
 from reports import generate_monthly_report, generate_weekly_report
 from scheduler import scheduler
@@ -183,6 +185,10 @@ def webhook():
                 if not transcript:
                     resp.message(f"I couldn't catch any words in that voice note, {name} 😕 Could you try again? Speak clearly and pause briefly between items 🙏")
                     return str(resp)
+                
+                # Track voice note transcription stat
+                from database import increment_stat
+                increment_stat("total_voice_notes_transcribed")
                 
                 # Check for low-confidence segments
                 if result.get("confidence_scores"):
@@ -406,7 +412,28 @@ def webhook():
         elif intent == "general_chat":
             natural = extract_intent_natural(transcript)
             nat_intent = natural.get("intent", "other")
-            resp.message(craft_response(nat_intent, natural, {"sender_phone": sender_phone, "full_name": name}))
+            
+            if nat_intent == "other":
+                # Log as unsupported request
+                try:
+                    from intelligence import detect_unsupported_request
+                    unsupported = detect_unsupported_request(transcript)
+                    log_unsupported_request(
+                        sender_phone=sender_phone,
+                        sender_name=name,
+                        raw_message=transcript,
+                        detected_intent=unsupported.get("detected_intent", ""),
+                        category=unsupported.get("category", "other"),
+                        priority_signal=unsupported.get("priority_signal", "low")
+                    )
+                    resp.message(craft_unsupported_response(name, unsupported["detected_intent"], unsupported["category"], metadata.get("role", "treasurer")))
+                except Exception:
+                    resp.message(craft_response("other", natural, {"sender_phone": sender_phone, "full_name": name}))
+            elif nat_intent == "confusion":
+                resp.message(craft_response("confusion", natural, {"sender_phone": sender_phone, "full_name": name}))
+            else:
+                resp.message(craft_response(nat_intent, natural, {"sender_phone": sender_phone, "full_name": name}))
+            
             upsert_session(sender_phone, intent=f"chat_{nat_intent}", metadata={"name": name})
             
         else:

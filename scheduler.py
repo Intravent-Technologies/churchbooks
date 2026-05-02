@@ -1,9 +1,11 @@
+import os
 import logging
 from apscheduler.schedulers.background import BackgroundScheduler
 import pytz
 from reports import send_report_to_all
 from financial_advisor import generate_monthly_advisory, get_all_active_phones
 from reports import send_twilio_message
+from database import get_weekly_feature_requests
 
 logging.basicConfig(level=logging.INFO)
 
@@ -21,3 +23,37 @@ def monthly_advisory_job():
             send_twilio_message(phone, report)
 
 scheduler.add_job(monthly_advisory_job, 'cron', day=1, hour=9, minute=0)
+
+# Weekly feature request digest every Monday at 8am
+def weekly_feature_digest():
+    """Send weekly feature request digest to admin."""
+    admin_phone = os.environ.get("ADMIN_PHONE")
+    if not admin_phone:
+        logging.warning("ADMIN_PHONE not set. Skipping feature digest.")
+        return
+    
+    requests = get_weekly_feature_requests()
+    
+    if not requests:
+        message = "📊 *Weekly Feature Request Digest*\n\nNo new feature requests this week. Keep building! 💪"
+    else:
+        lines = ["📊 *Weekly Feature Request Digest*\n"]
+        lines.append(f"*Total requests this week: {len(requests)}*\n")
+        
+        for i, req in enumerate(requests[:10], 1):
+            intent = req.get("detected_intent", "Unknown")
+            category = req.get("category", "other")
+            freq = req.get("frequency", 1)
+            priority = req.get("priority_signal", "low")
+            
+            priority_emoji = "🔴" if priority == "high" else "🟡" if priority == "medium" else "🟢"
+            lines.append(f"{i}. {priority_emoji} *{intent}*")
+            lines.append(f"   Category: {category} | Frequency: {freq}x\n")
+        
+        lines.append("Most requested features will be prioritized for building! 🚀")
+        message = "\n".join(lines)
+    
+    send_twilio_message(admin_phone, message)
+    logging.info(f"Weekly feature digest sent to admin: {len(requests)} requests")
+
+scheduler.add_job(weekly_feature_digest, 'cron', day_of_week='mon', hour=8, minute=0)

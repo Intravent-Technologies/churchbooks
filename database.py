@@ -336,3 +336,122 @@ def delete_old_transactions(sender_phone, keep_days=0):
     except Exception as e:
         logging.error(f"DB Error delete_old_transactions: {e}")
         return 0
+
+# --- Feature Request Intelligence ---
+
+def log_unsupported_request(sender_phone, sender_name, raw_message, detected_intent, category, priority_signal):
+    """Log or increment an unsupported feature request."""
+    try:
+        import rapidfuzz
+        from rapidfuzz import fuzz
+        
+        # Fuzzy match against existing intents
+        existing = supabase.table("unsupported_requests").select("*").execute()
+        
+        best_match = None
+        best_score = 0
+        
+        if existing.data:
+            for row in existing.data:
+                score = fuzz.partial_ratio(detected_intent.lower(), row.get("detected_intent", "").lower())
+                if score > best_score:
+                    best_score = score
+                    best_match = row
+        
+        now = datetime.now().isoformat()
+        
+        # If fuzzy match score > 85, increment frequency
+        if best_match and best_score > 85:
+            supabase.table("unsupported_requests").update({
+                "frequency": best_match.get("frequency", 1) + 1,
+                "last_asked": now
+            }).eq("id", best_match["id"]).execute()
+            return best_match["id"]
+        else:
+            payload = {
+                "sender_phone": sender_phone,
+                "sender_name": sender_name,
+                "raw_message": raw_message,
+                "detected_intent": detected_intent,
+                "category": category,
+                "priority_signal": priority_signal,
+                "frequency": 1,
+                "first_asked": now,
+                "last_asked": now,
+                "status": "noted"
+            }
+            response = supabase.table("unsupported_requests").insert(payload).execute()
+            return response.data[0]["id"] if response.data else None
+    except Exception as e:
+        logging.error(f"DB Error log_unsupported_request: {e}")
+        return None
+
+def get_weekly_feature_requests():
+    """Get feature requests from the last 7 days for admin digest."""
+    try:
+        seven_days_ago = (datetime.now() - timedelta(days=7)).isoformat()
+        response = supabase.table("unsupported_requests").select("*").gte("last_asked", seven_days_ago).order("frequency", desc=True).execute()
+        return response.data
+    except Exception as e:
+        logging.error(f"DB Error get_weekly_feature_requests: {e}")
+        return []
+
+def get_system_stats():
+    """Get current system stats."""
+    try:
+        response = supabase.table("system_stats").select("*").limit(1).execute()
+        if response.data:
+            return response.data[0]
+        return {
+            "total_transactions_processed": 0,
+            "total_voice_notes_transcribed": 0,
+            "total_churches_active": 0,
+            "total_features_built_from_requests": 0
+        }
+    except Exception as e:
+        logging.error(f"DB Error get_system_stats: {e}")
+        return {
+            "total_transactions_processed": 0,
+            "total_voice_notes_transcribed": 0,
+            "total_churches_active": 0,
+            "total_features_built_from_requests": 0
+        }
+
+def increment_stat(stat_name, count=1):
+    """Increment a system stat."""
+    try:
+        existing = supabase.table("system_stats").select("*").limit(1).execute()
+        now = datetime.now().isoformat()
+        
+        if existing.data:
+            current = existing.data[0].get(stat_name, 0) or 0
+            supabase.table("system_stats").update({
+                stat_name: current + count,
+                "last_updated": now
+            }).eq("id", existing.data[0]["id"]).execute()
+        else:
+            payload = {stat_name: count, "last_updated": now}
+            supabase.table("system_stats").insert(payload).execute()
+    except Exception as e:
+        logging.error(f"DB Error increment_stat: {e}")
+
+def notify_feature_requestors(detected_intent, announcement_text):
+    """Send announcement to everyone who requested a feature that was built."""
+    try:
+        from reports import send_twilio_message
+        
+        response = supabase.table("unsupported_requests").select("sender_phone", "sender_name").eq("detected_intent", detected_intent).execute()
+        
+        phones_notified = set()
+        for row in response.data:
+            phone = row.get("sender_phone")
+            name = row.get("sender_name", "Friend")
+            if phone and phone not in phones_notified:
+                phones_notified.add(phone)
+                personalized = announcement_text.replace("[Name]", name.split()[0].capitalize())
+                send_twilio_message(phone, personalized)
+        
+        return len(phones_notified)
+    except Exception as e:
+        logging.error(f"DB Error notify_feature_requestors: {e}")
+        return 0

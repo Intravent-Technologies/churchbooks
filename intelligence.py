@@ -151,3 +151,51 @@ def analyze_message(transcript_or_text, sender_phone):
             "response_text": "I didn't quite catch that. Could you please repeat it clearly?",
             "confidence": "low"
         }
+
+UNSUPPORTED_REQUEST_PROMPT = """A Nigerian church treasurer sent this message to ChurchBooks AI:
+'{message}'
+
+The system cannot currently handle this request.
+Identify:
+1. What feature or capability the user is asking for
+2. Which category it belongs to:
+   - reporting (they want a new type of report)
+   - tracking (they want to track something new)
+   - reminder (they want a scheduled notification)
+   - integration (they want to connect another tool)
+   - correction (they want to fix something)
+   - communication (they want to send something to someone)
+   - other
+
+Return ONLY JSON:
+{{
+  "detected_intent": "one sentence description of what they want",
+  "category": "category name",
+  "priority_signal": "high/medium/low based on how fundamental this need is for church finance"
+}}"""
+
+def detect_unsupported_request(message):
+    """Detect what feature the user is asking for when no known intent matches."""
+    try:
+        client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": "You are a feature request analyzer. Return ONLY valid JSON."},
+                {"role": "user", "content": UNSUPPORTED_REQUEST_PROMPT.format(message=message)}
+            ],
+            response_format={"type": "json_object"},
+            temperature=0.3,
+            max_tokens=256
+        )
+        raw = completion.choices[0].message.content.strip()
+        if raw.startswith("```json"):
+            raw = raw.replace("```json", "").replace("```", "").strip()
+        return json.loads(raw)
+    except Exception as e:
+        logging.error(f"Unsupported request detection error: {e}")
+        return {
+            "detected_intent": "Unknown feature request",
+            "category": "other",
+            "priority_signal": "low"
+        }

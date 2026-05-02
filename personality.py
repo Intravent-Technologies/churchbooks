@@ -274,3 +274,53 @@ def append_insight(base_message, insight_text):
     if insight_text:
         return f"{base_message}\n\n{insight_text}"
     return base_message
+
+def craft_unsupported_response(name, detected_intent, category, role="treasurer"):
+    """Response when user asks for a feature that doesn't exist yet."""
+    capabilities = {
+        "treasurer": [
+            "Log income/expenses with voice notes or text",
+            "Check balances and transaction history",
+            "Get weekly and monthly reports",
+            "Track transactions by programme or person"
+        ],
+        "pastor": [
+            "View church financial summaries",
+            "Get monthly advisory insights",
+            "Track overall church financial health"
+        ]
+    }
+    
+    suggestions = capabilities.get(role, capabilities["treasurer"])[:3]
+    suggestions_str = "\n".join([f"• {s}" for s in suggestions])
+    
+    return (
+        f"That's a great idea, {name} 🙏\n\n"
+        f"I can't do {detected_intent.lower()} just yet — "
+        f"but I've made a note of it.\n\n"
+        f"Our team reviews what churches are asking for every week, "
+        f"and the most requested features get built first. "
+        f"You're helping make ChurchBooks better for every church 💛\n\n"
+        f"In the meantime, here's what I *can* help you with:\n"
+        f"{suggestions_str}\n\n"
+        f"_Abby • ChurchBooks AI by Intravent_"
+    )
+
+def craft_stats_response(name, stats):
+    """Response when user asks 'What can you do?' or 'How smart are you?'"""
+    transactions = stats.get("total_transactions_processed", 0)
+    voice_notes = stats.get("total_voice_notes_transcribed", 0)
+    churches = stats.get("total_churches_active", 0)
+    features = stats.get("total_features_built_from_requests", 0)
+    
+    return (
+        f"I'm growing every week, {name} 😊\n\n"
+        f"Here's where I am right now:\n"
+        f"- {transactions:,} transactions processed across all churches\n"
+        f"- {voice_notes:,} voice notes understood\n"
+        f"- {churches:,} churches using ChurchBooks\n"
+        f"- {features} features built from church requests — including yours\n\n"
+        f"Every church that uses me makes me better for all the others.\n"
+        f"That's the power of building together 🙏\n\n"
+        f"_Abby • ChurchBooks AI by Intravent_"
+    )
