@@ -132,7 +132,8 @@ def handle_unknown_user(resp, phone, message_body, session):
             resp.message("Welcome! I'm Abby, your church's personal finance assistant. Please try again in a moment 🙏")
             return str(resp)
         
-        # Initialize session
+        # Set to step 1 (waiting for name)
+        advance_onboarding(phone, 1)
         update_session_state(phone, "ONBOARDING_1")
         
         reply = (
@@ -147,7 +148,7 @@ def handle_unknown_user(resp, phone, message_body, session):
         
     except Exception as e:
         safe_log_error(e, "handle_unknown_user", phone)
-        resp.message("Hello! Welcome to Ledgr Chapel. Please try again in a moment 🙏")
+        resp.message(f"DEBUG ERROR: {str(e)}")
     
     return str(resp)
 
