@@ -266,6 +266,10 @@ def get_session(sender_phone):
         row = response.data[0]
         last_active = datetime.fromisoformat(row["last_active"])
         
+        # Handle timezone-aware timestamps from Supabase
+        if last_active.tzinfo is not None:
+            last_active = last_active.replace(tzinfo=None)
+        
         # Expire after 2 hours
         if (datetime.now() - last_active).total_seconds() > 7200:
             delete_session(sender_phone)
