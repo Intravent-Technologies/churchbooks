@@ -1,8 +1,8 @@
 import os
 import logging
 from datetime import datetime, timedelta
-from twilio.rest import Client
 from database import get_transactions, get_all_active_phones
+from whatsapp_api import send_whatsapp_message
 
 logging.basicConfig(level=logging.INFO)
 
@@ -123,20 +123,9 @@ _ChurchBooks AI • Send REPORT anytime_"""
         logging.error(f"Monthly report generation error: {e}")
         return "Could not generate monthly report."
 
-def send_twilio_message(to_phone, body):
-    try:
-        client = Client(os.environ.get("TWILIO_ACCOUNT_SID"), os.environ.get("TWILIO_AUTH_TOKEN"))
-        client.messages.create(
-            body=body,
-            from_=os.environ.get("TWILIO_WHATSAPP_NUMBER"),
-            to=to_phone
-        )
-    except Exception as e:
-        logging.error(f"Twilio send error: {e}")
-
 def send_report_to_all():
     phones = get_all_active_phones()
     logging.info(f"Sending weekly reports to {len(phones)} phones")
     for phone in phones:
         report = generate_weekly_report(phone)
-        send_twilio_message(phone, report)
+        send_whatsapp_message(phone, report)

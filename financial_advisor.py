@@ -5,7 +5,7 @@ import threading
 from datetime import datetime, timedelta
 from groq import Groq
 from database import get_transactions, get_balance_summary, get_all_active_phones
-from reports import send_twilio_message
+from whatsapp_api import send_whatsapp_message
 
 logging.basicConfig(level=logging.INFO)
 
@@ -185,7 +185,7 @@ def run_background_insights(sender_phone, phone_number, entries):
         try:
             insight = run_triggered_insights(sender_phone, entries, phone_number)
             if insight and phone_number:
-                send_twilio_message(phone_number, insight)
+                send_whatsapp_message(phone_number, insight)
         except Exception as e:
             logging.error(f"Background insight error: {e}")
             

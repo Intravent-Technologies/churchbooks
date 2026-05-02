@@ -4,7 +4,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 import pytz
 from reports import send_report_to_all
 from financial_advisor import generate_monthly_advisory
-from reports import send_twilio_message
+from whatsapp_api import send_whatsapp_message
 from database import get_weekly_feature_requests, get_all_active_phones
 
 logging.basicConfig(level=logging.INFO)
@@ -20,7 +20,7 @@ def monthly_advisory_job():
     for phone in phones:
         report = generate_monthly_advisory(phone)
         if report:
-            send_twilio_message(phone, report)
+            send_whatsapp_message(phone, report)
 
 scheduler.add_job(monthly_advisory_job, 'cron', day=1, hour=9, minute=0)
 
@@ -53,7 +53,7 @@ def weekly_feature_digest():
         lines.append("Most requested features will be prioritized for building! 🚀")
         message = "\n".join(lines)
     
-    send_twilio_message(admin_phone, message)
+    send_whatsapp_message(admin_phone, message)
     logging.info(f"Weekly feature digest sent to admin: {len(requests)} requests")
 
 scheduler.add_job(weekly_feature_digest, 'cron', day_of_week='mon', hour=8, minute=0)
