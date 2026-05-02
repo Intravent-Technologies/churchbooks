@@ -161,10 +161,24 @@ def handle_onboarding(resp, phone, message_body, media_url, media_type, user, se
         step = user.get("onboarding_step", 0)
         first_name = user.get("first_name") or get_user_display_name(phone)
         
+        # Transcribe voice notes for ALL onboarding steps
+        if media_url and media_type and "audio" in media_type:
+            try:
+                audio_path = download_audio(media_url)
+                transcription = transcribe_audio(audio_path)
+                message_body = transcription.get("text", "").strip()
+                import os as _os
+                if _os.path.exists(audio_path):
+                    _os.remove(audio_path)
+            except Exception as e:
+                safe_log_error(e, "handle_onboarding_voice", phone)
+                resp.message("Sorry, I couldn't understand that voice note. Please try again or type your response 😊")
+                return str(resp)
+        
         if step == 0:
             return _onboarding_step_0(resp, phone, message_body, user)
         elif step == 1:
-            return _onboarding_step_1(resp, phone, message_body, media_url, media_type, user)
+            return _onboarding_step_1(resp, phone, message_body, user)
         elif step == 2:
             return _onboarding_step_2(resp, phone, message_body, user)
         elif step == 3:
@@ -177,8 +191,7 @@ def handle_onboarding(resp, phone, message_body, media_url, media_type, user, se
             
     except Exception as e:
         safe_log_error(e, "handle_onboarding", phone)
-        name = user.get("first_name") or "Friend"
-        resp.message(fallback_response(name))
+        resp.message(f"DEBUG ERROR: {str(e)}")
     
     return str(resp)
 
@@ -198,22 +211,8 @@ def _onboarding_step_0(resp, phone, message_body, user):
     update_session_context(phone, message_body, reply)
     return str(resp)
 
-def _onboarding_step_1(resp, phone, message_body, media_url, media_type, user):
+def _onboarding_step_1(resp, phone, message_body, user):
     """Waiting for name (state: ONBOARDING_1)"""
-    # Handle voice notes by transcribing first
-    if media_url and media_type and "audio" in media_type:
-        try:
-            audio_path = download_audio(media_url)
-            transcription = transcribe_audio(audio_path)
-            message_body = transcription.get("text", "").strip()
-            import os
-            if os.path.exists(audio_path):
-                os.remove(audio_path)
-        except Exception as e:
-            safe_log_error(e, "_onboarding_step_1_voice", phone)
-            resp.message("Sorry, I couldn't understand that. Please type your full name or send a clearer voice note 😊\nFor example: *Grace Adeyemi* or *Pastor James Okafor*")
-            return str(resp)
-    
     valid, error_msg = validate_name(message_body)
     
     if not valid:
@@ -289,7 +288,7 @@ def _onboarding_step_3(resp, phone, message_body, user):
         advance_onboarding(phone, 4, {"church_name": church_name, "church_id": existing_church["id"]})
         
         reply = (
-            f"I found {existing_church['name']} already on Ledgr Chapel 🙏\n\n"
+            f"I found {existing_church.get('church_name', church_name)} already on Ledgr Chapel 🙏\n\n"
             f"I've sent a request to the church admin to verify "
             f"your membership. You'll be notified once approved.\n\n"
             f"Is that the right church?"
@@ -328,7 +327,7 @@ def _onboarding_step_3(resp, phone, message_body, user):
             advance_onboarding(phone, 4, {"church_name": church_name, "church_id": new_church["id"]})
             
             # Notify admin
-            admin_phone = app.config.get("ADMIN_PHONE")
+            admin_phone = os.environ.get("ADMIN_PHONE")
             if admin_phone:
                 try:
                     from reports import send_twilio_message
@@ -374,14 +373,14 @@ def _onboarding_step_4(resp, phone, message_body, user):
             complete_onboarding_progress(target_phone)
             
             # Notify the approved user
-            admin_phone = app.config.get("ADMIN_PHONE")
+            admin_phone = os.environ.get("ADMIN_PHONE")
             try:
                 from reports import send_twilio_message
                 approved_user = get_user_by_phone(target_phone)
                 if approved_user:
                     approved_first = approved_user.get("first_name", "Friend")
                     church = get_church(approved_user.get("church_id"))
-                    church_name = church.get("name", "your church") if church else "your church"
+                    church_name = church.get("church_name", "your church") if church else "your church"
                     
                     send_twilio_message(
                         target_phone,

@@ -209,9 +209,8 @@ def find_church_by_name(name):
     """Fuzzy match church by name. Returns church or None."""
     try:
         # Direct match first
-        response = supabase.table("churches").select("*").ilike("name", f"%{name}%").execute()
+        response = supabase.table("churches").select("*").ilike("church_name", f"%{name}%").execute()
         if response.data:
-            # Return closest match (first result)
             return response.data[0]
         return None
     except Exception as e:
@@ -222,14 +221,17 @@ def create_church(name, city="", state="", denomination="", pastor_phone=""):
     """Create a new church record."""
     try:
         now = datetime.utcnow().isoformat()
+        slug = name.lower().strip().replace(" ", "-").replace("'", "")[:50]
         payload = {
-            "name": name.strip(),
+            "church_name": name.strip(),
+            "slug": slug,
             "city": city,
             "state": state,
             "denomination": denomination,
-            "pastor_phone": clean_phone(pastor_phone) if pastor_phone else None,
+            "phone": clean_phone(pastor_phone) if pastor_phone else None,
             "is_active": True,
-            "created_at": now
+            "created_at": now,
+            "updated_at": now
         }
         response = supabase.table("churches").insert(payload).execute()
         return response.data[0] if response.data else None
