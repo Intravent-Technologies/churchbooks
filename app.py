@@ -67,11 +67,11 @@ def _reply(phone, message):
     """Send a WhatsApp message via Meta Cloud API."""
     send_whatsapp_message(phone, message)
 
-def _transcribe_audio_from_media_id(media_id):
-    """Download and transcribe audio from Meta media ID."""
+def _transcribe_audio_from_url(media_url):
+    """Download and transcribe audio from URL."""
     audio_path = None
     try:
-        audio_path = download_media(media_id)
+        audio_path = download_media(media_url)
         if audio_path:
             return transcribe_audio(audio_path)
         return None
@@ -80,7 +80,7 @@ def _transcribe_audio_from_media_id(media_id):
             os.remove(audio_path)
 
 # ============================================================
-# WEBHOOK — Meta WhatsApp Cloud API
+# WEBHOOK — WAHA API
 # ============================================================
 
 @app.route("/webhook", methods=["GET"])
@@ -90,51 +90,40 @@ def webhook_verify():
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    """Handle incoming WhatsApp messages from Evolution API."""
+    """Handle incoming WhatsApp messages from WAHA API."""
     body = request.get_json(silent=True)
     if not body:
         return jsonify({"status": "error", "message": "No JSON body"}), 400
 
     try:
-        # Evolution API payload format
-        event = body.get("event", "")
-        data = body.get("data", {})
+        # WAHA payload format
+        session = body.get("session", "")
+        payload = body.get("payload", body)
 
-        if event != "messages.upsert":
-            return jsonify({"status": "ignored"}), 200
-
-        key = data.get("key", {})
-        raw_phone = key.get("remoteJid", "")
-        # Strip "@s.whatsapp.net" suffix
+        raw_phone = payload.get("from", "")
+        # Strip "@c.us" suffix
         phone = clean_phone(raw_phone.split("@")[0] if "@" in raw_phone else raw_phone)
 
-        message = data.get("message", {})
         message_body = ""
-        media_id = None
+        media_url = None
         media_type = ""
 
         # Text message
-        if "conversation" in message:
-            message_body = message["conversation"].strip()
-        elif "extendedTextMessage" in message:
-            message_body = message["extendedTextMessage"].get("text", "").strip()
+        if "body" in payload:
+            message_body = payload["body"].strip()
+        elif "caption" in payload:
+            message_body = payload["caption"].strip()
+        elif "text" in payload:
+            message_body = payload["text"].strip()
+
         # Audio/voice note
-        elif "audioMessage" in message:
-            audio = message["audioMessage"]
-            media_id = audio.get("url", "")
-            media_type = "audio/ogg"
-        # Document/image/video with audio
-        elif "documentMessage" in message:
-            doc = message["documentMessage"]
-            if doc.get("mimetype", "").startswith("audio"):
-                media_id = doc.get("url", "")
-                media_type = doc.get("mimetype", "audio/ogg")
-            else:
-                message_body = f"[Document: {doc.get('fileName', 'file')}]"
-        elif "imageMessage" in message:
-            caption = message["imageMessage"].get("caption", "")
-            if caption:
-                message_body = caption.strip()
+        mimetype = payload.get("mimetype", "")
+        if mimetype.startswith("audio"):
+            media_url = payload.get("url", "")
+            media_type = mimetype
+        elif payload.get("type") == "audio":
+            media_url = payload.get("url", "")
+            media_type = mimetype or "audio/ogg"
 
         if not phone:
             return jsonify({"status": "ignored"}), 200
@@ -145,9 +134,9 @@ def webhook():
         if not user:
             handle_unknown_user(phone, message_body)
         elif user.get("onboarding_step", 0) < 5:
-            handle_onboarding(phone, message_body, media_id, media_type, user)
+            handle_onboarding(phone, message_body, media_url, media_type, user)
         else:
-            handle_registered_user(phone, message_body, media_id, media_type, user)
+            handle_registered_user(phone, message_body, media_url, media_type, user)
 
         return jsonify({"status": "received"}), 200
 
@@ -188,15 +177,15 @@ def handle_unknown_user(phone, message_body):
 # ONBOARDING — Steps 1-4
 # ============================================================
 
-def handle_onboarding(phone, message_body, media_id, media_type, user):
+def handle_onboarding(phone, message_body, media_url, media_type, user):
     """Route to the correct onboarding step."""
     try:
         step = user.get("onboarding_step", 0)
 
         # Transcribe voice notes for ALL onboarding steps
-        if media_id and media_type and "audio" in media_type:
+        if media_url and media_type and "audio" in media_type:
             try:
-                result = _transcribe_audio_from_media_id(media_id)
+                result = _transcribe_audio_from_url(media_url)
                 if result and result.get("text"):
                     message_body = result.get("text", "").strip()
                 else:
@@ -423,7 +412,7 @@ def _onboarding_step_4(phone, message_body, user):
 # REGISTERED USER — Normal flow
 # ============================================================
 
-def handle_registered_user(phone, message_body, media_id, media_type, user):
+def handle_registered_user(phone, message_body, media_url, media_type, user):
     """Fully registered user flow."""
     try:
         first_name = user.get("first_name", "Friend")
@@ -444,8 +433,8 @@ def handle_registered_user(phone, message_body, media_id, media_type, user):
             clear_pending_transaction(phone)
             update_session_state(phone, "ACTIVE")
 
-        if media_id and media_type and "audio" in media_type:
-            return _handle_voice_note(phone, media_id, first_name, user, session)
+        if media_url and media_type and "audio" in media_type:
+            return _handle_voice_note(phone, media_url, first_name, user, session)
 
         return _handle_text_message(phone, message_body, first_name, user, session)
 
@@ -502,10 +491,10 @@ def _handle_greeting(phone, message_body, first_name, session):
     _reply(phone, reply)
     update_session_context(phone, message_body, reply)
 
-def _handle_voice_note(phone, media_id, first_name, user, session):
+def _handle_voice_note(phone, media_url, first_name, user, session):
     """Process voice note."""
     try:
-        result = _transcribe_audio_from_media_id(media_id)
+        result = _transcribe_audio_from_url(media_url)
 
         if result is None:
             _reply(phone, (

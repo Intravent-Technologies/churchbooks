@@ -2,55 +2,51 @@ import os
 import logging
 import requests
 import tempfile
+import base64
 
 logging.basicConfig(level=logging.INFO)
 
-EVOLUTION_API_URL = os.environ.get("EVOLUTION_API_URL", "").rstrip("/")
-EVOLUTION_API_KEY = os.environ.get("EVOLUTION_API_KEY", "")
-EVOLUTION_INSTANCE_NAME = os.environ.get("EVOLUTION_INSTANCE_NAME", "churchbot")
+WAHA_BASE_URL = os.environ.get("WAHA_BASE_URL", "https://waha-latest-g5ir.onrender.com")
+WAHA_API_KEY = os.environ.get("WAHA_API_KEY", "churchbot-secret-key-2026")
+WAHA_SESSION_NAME = os.environ.get("WAHA_SESSION_NAME", "churchbot")
 
 def send_whatsapp_message(to_phone, body):
-    """Send a WhatsApp text message via Evolution API."""
+    """Send a WhatsApp text message via WAHA API."""
     try:
-        if not EVOLUTION_API_URL or not EVOLUTION_API_KEY:
-            logging.error("Evolution API not configured")
-            return False
-
         clean_phone = to_phone.replace("whatsapp:", "").strip()
-        url = f"{EVOLUTION_API_URL}/message/sendText/{EVOLUTION_INSTANCE_NAME}"
+        if not clean_phone.startswith("+"):
+            clean_phone = "+" + clean_phone
+
+        url = f"{WAHA_BASE_URL.rstrip('/')}/api/sendText"
         headers = {
-            "apikey": EVOLUTION_API_KEY,
+            "X-Api-Key": WAHA_API_KEY,
             "Content-Type": "application/json"
         }
         payload = {
-            "number": clean_phone,
-            "text": body,
-            "delay": 1200,
-            "linkPreview": False,
-            "mentionsEveryOne": False
+            "session": WAHA_SESSION_NAME,
+            "chatId": f"{clean_phone}@c.us",
+            "text": body
         }
-        response = requests.post(url, headers=headers, json=payload, timeout=10)
+        response = requests.post(url, headers=headers, json=payload, timeout=15)
         if response.status_code in [200, 201]:
             logging.info(f"Message sent to {clean_phone}")
             return True
         else:
-            logging.error(f"Evolution API error: {response.status_code} - {response.text}")
+            logging.error(f"WAHA error: {response.status_code} - {response.text}")
             return False
     except Exception as e:
         logging.error(f"send_whatsapp_message error: {e}")
         return False
 
-def download_media(media_id_or_url):
-    """Download media from Evolution API webhook payload."""
+def download_media(message_id_or_url):
+    """Download media from WAHA webhook payload."""
     try:
-        if not media_id_or_url:
+        if not message_id_or_url:
             return None
 
-        # Evolution API sends base64 or URL in webhook
-        if media_id_or_url.startswith("data:"):
-            # Base64 encoded audio
-            import base64
-            header, data = media_id_or_url.split(",", 1)
+        # WAHA sends media as URL in webhook or as base64
+        if message_id_or_url.startswith("data:"):
+            header, data = message_id_or_url.split(",", 1)
             mime_type = header.split(";")[0].replace("data:", "")
             ext = ".ogg" if "audio" in mime_type else ".bin"
             fd, path = tempfile.mkstemp(suffix=ext)
@@ -60,15 +56,15 @@ def download_media(media_id_or_url):
             logging.info(f"Downloaded base64 media: {os.path.getsize(path)} bytes")
             return path
 
-        if media_id_or_url.startswith("http"):
-            # URL — download directly
-            response = requests.get(media_id_or_url, timeout=30)
+        if message_id_or_url.startswith("http"):
+            headers = {"X-Api-Key": WAHA_API_KEY}
+            response = requests.get(message_id_or_url, headers=headers, timeout=30)
             if response.status_code == 200:
                 fd, path = tempfile.mkstemp(suffix=".ogg")
                 os.close(fd)
                 with open(path, "wb") as f:
                     f.write(response.content)
-                logging.info(f"Downloaded media from URL: {os.path.getsize(path)} bytes")
+                logging.info(f"Downloaded media: {os.path.getsize(path)} bytes")
                 return path
 
         return None
